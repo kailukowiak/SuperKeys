@@ -15,7 +15,7 @@ Your configs stay in this git repo. Install scripts create symlinks so changes s
 Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/SuperKeys.git
+git clone https://github.com/kailukowiak/SuperKeys.git
 cd SuperKeys
 ```
 
