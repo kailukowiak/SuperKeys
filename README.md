@@ -1,14 +1,22 @@
 # SuperKeys
 
-Cross-platform keyboard remapping configuration using symlinks. Edit once, sync everywhere.
+Cross-platform keyboard remapping using Caps Lock as a Hyper key. Edit once, sync everywhere.
 
 ## What This Does
 
-- **Linux (keyd)**: Caps Lock as Hyper key with vim-style navigation, word/line movements, and app shortcuts
-- **Mac (Karabiner)**: Placeholder config (Caps→Esc/Ctrl)
-- **Windows (AutoHotkey)**: Placeholder config (Caps→Esc/Ctrl)
+Transforms Caps Lock into a powerful "Hyper" modifier key with vim-style navigation and editing shortcuts that work consistently across Linux, Mac, and Windows.
 
-Your configs stay in this git repo. Install scripts create symlinks so changes sync across your machines.
+**Core Features:**
+- **Caps Lock**: Tap for Escape, hold for Hyper key
+- **Vim Navigation**: `Caps+H/J/K/L` for arrow keys
+- **Text Selection**: Add Shift for selecting while navigating
+- **Word/Line Navigation**: Quick movement with `A/E/U/O/I`
+- **Smart Deletion**: Multiple delete modes with `N/M/,/.`
+- **Universal Clipboard**: `Caps+C/V/X` for copy/paste/cut (works in terminals!)
+- **Window Management**: Quick window/tab switching
+- **App Shortcuts**: Number keys for launching apps
+
+Your configs stay in this git repo. Install scripts create symlinks so changes sync across machines.
 
 ## Installation
 
@@ -33,9 +41,9 @@ cd windows
 ```
 
 The installer will:
-- Check if required software is installed (keyd/Karabiner/AutoHotkey)
-- Create necessary directories
-- Symlink configs (won't overwrite existing files)
+- Check if required software is installed
+- Backup existing configs
+- Create symlinks to this repo
 - Auto-restart services (Linux only)
 
 ## Uninstalling
@@ -61,6 +69,53 @@ Remove-Item $env:USERPROFILE\Documents\AutoHotkey\keymap.ahk
 Move-Item $env:USERPROFILE\Documents\AutoHotkey\keymap.ahk.bak keymap.ahk  # if backup exists
 ```
 
+## Keyboard Layout
+
+### Navigation
+| Key | Action | With Shift |
+|-----|--------|------------|
+| `Caps+H` | ← Left | Select left |
+| `Caps+J` | ↓ Down | Select down |
+| `Caps+K` | ↑ Up | Select up |
+| `Caps+L` | → Right | Select right |
+| `Caps+A` | Word left | |
+| `Caps+E` | Word right | |
+| `Caps+U` | Line start | |
+| `Caps+O` | Line end | |
+| `Caps+I` | Line end (alt) | |
+| `Caps+D` | Page down | |
+| `Caps+F` | Page up | |
+
+### Editing
+| Key | Action |
+|-----|--------|
+| `Caps+M` | Delete char backward |
+| `Caps+N` | Delete word backward |
+| `Caps+,` | Delete char forward |
+| `Caps+.` | Delete word forward |
+
+### Clipboard
+| Key | Action |
+|-----|--------|
+| `Caps+C` | Copy (works in terminals!) |
+| `Caps+V` | Paste (works in terminals!) |
+| `Caps+X` | Cut (works in terminals!) |
+
+### Window Control
+| Key | Action |
+|-----|--------|
+| `Caps+W` | Close window/tab |
+| `Caps+Q` | Quit application |
+| `Caps+Tab` | Switch windows |
+| `Caps+Shift+Tab` | Switch windows (reverse) |
+
+### Other
+| Key | Action |
+|-----|--------|
+| `Caps+Esc` | Toggle Caps Lock |
+| `Caps+Space` | Language/input switcher |
+| `Caps+1-0` | App shortcuts (configurable) |
+
 ## Customizing
 
 Edit the config files for your platform:
@@ -81,6 +136,31 @@ Changes take effect immediately via the symlink. Commit and push to sync across 
 **Windows:**
 - [AutoHotkey v1.1](https://www.autohotkey.com/)
 - Developer Mode enabled OR run PowerShell as Administrator
+
+## Platform-Specific Notes
+
+### Linux (keyd)
+- Clipboard operations use `Ctrl+Shift+C/V/X` for terminal compatibility
+- App shortcuts emit `Ctrl+1-0` - bind these in your window manager to launch apps
+- Window switching uses `Alt+Tab`
+
+### Mac (Karabiner)
+- Clipboard operations use native `Cmd+C/V/X`
+- App shortcuts emit `Ctrl+1-0` - works with tools like Raycast/Alfred
+- Window switching uses native `Cmd+Tab`
+
+### Windows (AutoHotkey)
+- Config needs to be created/updated to match the new layout
+- Placeholder config currently only maps Caps→Esc/Ctrl
+
+## Philosophy
+
+This config prioritizes:
+1. **Cross-platform consistency** - Same muscle memory everywhere
+2. **Terminal-friendly** - Clipboard works without conflicts
+3. **Vim-inspired** - Familiar to vim users, easy for others
+4. **Non-intrusive** - Caps Lock is otherwise unused
+5. **Git-based** - Version controlled, easily synced
 
 ## License
 
