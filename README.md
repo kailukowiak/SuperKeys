@@ -180,8 +180,8 @@ Changes take effect immediately via the symlink. Commit and push to sync across 
 - App shortcuts emit `Ctrl+1-0` - bind these in your preferred app launcher
 - Window switching uses `Alt+Tab`
 - Quit application uses `Alt+F4`
-- After installation, double-click the keymap.ahk file to activate
-- Set up auto-start by adding a shortcut to the startup folder (instructions shown during install)
+- Installer offers to set up autostart and launch immediately
+- To uninstall: `.\install.ps1 -Uninstall`
 
 ## Philosophy
 
