@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Check if Karabiner-Elements is installed
+if [ ! -d "/Applications/Karabiner-Elements.app" ]; then
+    echo "Error: Karabiner-Elements is not installed in /Applications."
+    echo "Please install it from: https://karabiner-elements.pqrs.org/"
+    exit 1
+fi
+
 # 1. Get the absolute path of the config file inside the repo
 REPO_CONFIG="$(cd "$(dirname "$0")" && pwd)/karabiner.json"
 

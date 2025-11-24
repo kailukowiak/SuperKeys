@@ -1,3 +1,16 @@
+# Check if AutoHotkey is installed
+$AhkInstalled = Get-Command "AutoHotkey" -ErrorAction SilentlyContinue
+# Common default install paths for v1 and v2
+$AhkPathV1 = "${env:ProgramFiles}\AutoHotkey\AutoHotkey.exe"
+$AhkPathV2 = "${env:ProgramFiles}\AutoHotkey\v2\AutoHotkey.exe"
+
+if (-not $AhkInstalled -and -not (Test-Path $AhkPathV1) -and -not (Test-Path $AhkPathV2)) {
+    Write-Host "Error: AutoHotkey is not detected." -ForegroundColor Red
+    Write-Host "Please install AutoHotkey (v1.1 or v2): https://www.autohotkey.com/"
+    Write-Host "If installed, ensure it is in your PATH or installed to the default location."
+    exit 1
+}
+
 # 1. Get the absolute path of the config file inside the repo
 $RepoConfig = Join-Path $PSScriptRoot "keymap.ahk"
 

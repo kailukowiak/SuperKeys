@@ -6,6 +6,17 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+# Check if keyd is installed
+if ! command -v keyd &> /dev/null; then
+    echo "Error: 'keyd' is not installed or not in your PATH."
+    echo "Please install keyd first: https://github.com/rvaiya/keyd"
+    echo "Installation summary:"
+    echo "  git clone https://github.com/rvaiya/keyd"
+    echo "  cd keyd && make && sudo make install"
+    echo "  sudo systemctl enable keyd && sudo systemctl start keyd"
+    exit 1
+fi
+
 # 1. Get the absolute path of the config file inside the repo
 # $(dirname "$0") gets the directory where this script lives
 REPO_CONFIG="$(cd "$(dirname "$0")" && pwd)/default.conf"
