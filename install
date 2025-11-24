@@ -1,0 +1,30 @@
+#!/bin/bash
+# SuperKeys - Cross-platform installer
+# Auto-detects your OS and runs the appropriate install script
+
+case "$(uname -s)" in
+    Linux*)
+        echo "Detected Linux, running Linux installer..."
+        cd "$(dirname "$0")/linux" && sudo ./install.sh
+        ;;
+    Darwin*)
+        echo "Detected macOS, running Mac installer..."
+        cd "$(dirname "$0")/mac" && ./install.sh
+        ;;
+    CYGWIN*|MINGW*|MSYS*)
+        echo "Detected Windows/Git Bash"
+        echo "Please run the Windows installer directly:"
+        echo "  cd windows"
+        echo "  Right-click install.ps1 and select 'Run with PowerShell'"
+        echo "  Or from PowerShell: .\install.ps1"
+        exit 1
+        ;;
+    *)
+        echo "Unsupported platform: $(uname -s)"
+        echo "Please run the appropriate installer manually:"
+        echo "  Linux: cd linux && sudo ./install.sh"
+        echo "  Mac: cd mac && ./install.sh"
+        echo "  Windows: cd windows && run install.ps1 in PowerShell"
+        exit 1
+        ;;
+esac

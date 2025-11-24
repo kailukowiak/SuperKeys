@@ -17,21 +17,68 @@ if ! command -v keyd &> /dev/null; then
     exit 1
 fi
 
-# 1. Get the absolute path of the config file inside the repo
-# $(dirname "$0") gets the directory where this script lives
+# Get the absolute path of the config file inside the repo
 REPO_CONFIG="$(cd "$(dirname "$0")" && pwd)/default.conf"
+TARGET_DIR="/etc/keyd"
+TARGET_PATH="$TARGET_DIR/default.conf"
 
-# 2. Define where the OS expects the config
-TARGET_PATH="/etc/keyd/default.conf"
-
-# 3. Backup existing config if it exists (Safety first)
-if [ -f "$TARGET_PATH" ] || [ -L "$TARGET_PATH" ]; then
-    echo "Backing up existing config to ${TARGET_PATH}.bak"
-    mv "$TARGET_PATH" "${TARGET_PATH}.bak"
+# Ensure /etc/keyd directory exists
+if [ ! -d "$TARGET_DIR" ]; then
+    echo "Creating directory $TARGET_DIR"
+    mkdir -p "$TARGET_DIR"
 fi
 
-# 4. Create the symbolic link
+# Check if config already exists
+if [ -L "$TARGET_PATH" ]; then
+    # It's a symlink - check if it points to our repo
+    CURRENT_TARGET="$(readlink -f "$TARGET_PATH")"
+    if [ "$CURRENT_TARGET" = "$REPO_CONFIG" ]; then
+        echo "✓ SuperKeys is already installed and up to date"
+        echo "  Symlink: $TARGET_PATH -> $REPO_CONFIG"
+        exit 0
+    else
+        echo "Error: A symlink already exists but points to a different location:"
+        echo "  Current: $TARGET_PATH -> $CURRENT_TARGET"
+        echo "  Expected: $REPO_CONFIG"
+        echo ""
+        echo "To reinstall, first remove the existing symlink:"
+        echo "  sudo rm $TARGET_PATH"
+        exit 1
+    fi
+elif [ -f "$TARGET_PATH" ]; then
+    # It's a regular file
+    echo "Error: An existing config file was found at $TARGET_PATH"
+    echo ""
+    echo "To avoid data loss, this script will not overwrite it."
+    echo "Please manually backup or remove the existing file:"
+    echo "  sudo mv $TARGET_PATH ${TARGET_PATH}.bak"
+    echo "  sudo rm $TARGET_PATH"
+    echo ""
+    echo "Then run this script again."
+    exit 1
+fi
+
+# Create the symbolic link
 echo "Linking $REPO_CONFIG -> $TARGET_PATH"
 ln -s "$REPO_CONFIG" "$TARGET_PATH"
 
-echo "Done! Configuration is now linked to Git. You may need to restart keyd (e.g., sudo systemctl restart keyd) for changes to take effect."
+# Verify symlink was created
+if [ ! -L "$TARGET_PATH" ]; then
+    echo "Error: Failed to create symlink"
+    exit 1
+fi
+
+echo "✓ Symlink created successfully"
+
+# Restart keyd to apply changes
+echo "Restarting keyd..."
+systemctl restart keyd
+
+if systemctl is-active --quiet keyd; then
+    echo "✓ keyd restarted successfully"
+    echo ""
+    echo "Done! Your SuperKeys configuration is now active."
+else
+    echo "Warning: keyd service may not be running properly"
+    echo "Check status with: sudo systemctl status keyd"
+fi
