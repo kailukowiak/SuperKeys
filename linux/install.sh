@@ -29,13 +29,14 @@ if [ ! -d "$TARGET_DIR" ]; then
 fi
 
 # Check if config already exists
+SYMLINK_ALREADY_EXISTS=false
 if [ -L "$TARGET_PATH" ]; then
     # It's a symlink - check if it points to our repo
     CURRENT_TARGET="$(readlink -f "$TARGET_PATH")"
     if [ "$CURRENT_TARGET" = "$REPO_CONFIG" ]; then
         echo "✓ SuperKeys is already installed and up to date"
         echo "  Symlink: $TARGET_PATH -> $REPO_CONFIG"
-        exit 0
+        SYMLINK_ALREADY_EXISTS=true
     else
         echo "Error: A symlink already exists but points to a different location:"
         echo "  Current: $TARGET_PATH -> $CURRENT_TARGET"
@@ -58,17 +59,19 @@ elif [ -f "$TARGET_PATH" ]; then
     exit 1
 fi
 
-# Create the symbolic link
-echo "Linking $REPO_CONFIG -> $TARGET_PATH"
-ln -s "$REPO_CONFIG" "$TARGET_PATH"
+# Create the symbolic link if it doesn't already exist
+if [ "$SYMLINK_ALREADY_EXISTS" = false ]; then
+    echo "Linking $REPO_CONFIG -> $TARGET_PATH"
+    ln -s "$REPO_CONFIG" "$TARGET_PATH"
 
-# Verify symlink was created
-if [ ! -L "$TARGET_PATH" ]; then
-    echo "Error: Failed to create symlink"
-    exit 1
+    # Verify symlink was created
+    if [ ! -L "$TARGET_PATH" ]; then
+        echo "Error: Failed to create symlink"
+        exit 1
+    fi
+
+    echo "✓ Symlink created successfully"
 fi
-
-echo "✓ Symlink created successfully"
 
 # Restart keyd to apply changes
 echo "Restarting keyd..."
