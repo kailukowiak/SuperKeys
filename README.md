@@ -143,15 +143,21 @@ Changes take effect immediately via the symlink. Commit and push to sync across 
 - Clipboard operations use `Ctrl+Shift+C/V/X` for terminal compatibility
 - App shortcuts emit `Ctrl+1-0` - bind these in your window manager to launch apps
 - Window switching uses `Alt+Tab`
+- Quit application uses `Alt+Q`
 
 ### Mac (Karabiner)
-- Clipboard operations use native `Cmd+C/V/X`
+- Clipboard operations use native `Cmd+C/V/X` (works everywhere including terminals!)
 - App shortcuts emit `Ctrl+1-0` - works with tools like Raycast/Alfred
 - Window switching uses native `Cmd+Tab`
+- Quit application uses `Cmd+Q`
 
 ### Windows (AutoHotkey)
-- Config needs to be created/updated to match the new layout
-- Placeholder config currently only maps Caps→Esc/Ctrl
+- Clipboard operations use native `Ctrl+C/V/X` (standard Windows shortcuts)
+- App shortcuts emit `Ctrl+1-0` - bind these in your preferred app launcher
+- Window switching uses `Alt+Tab`
+- Quit application uses `Alt+F4`
+- After installation, double-click the keymap.ahk file to activate
+- Set up auto-start by adding a shortcut to the startup folder (instructions shown during install)
 
 ## Philosophy
 

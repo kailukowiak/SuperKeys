@@ -81,5 +81,12 @@ if (-not (Test-Path $TargetFile)) {
 
 Write-Host "✓ Symlink created successfully" -ForegroundColor Green
 Write-Host ""
-Write-Host "Done! Your SuperKeys configuration is now active." -ForegroundColor Green
-Write-Host "Run the script to load your AutoHotkey configuration."
+Write-Host "Done! Your SuperKeys configuration is ready." -ForegroundColor Green
+Write-Host ""
+Write-Host "To activate SuperKeys:" -ForegroundColor Yellow
+Write-Host "  1. Double-click: $TargetFile"
+Write-Host "  2. Or run: AutoHotkey.exe `"$TargetFile`""
+Write-Host ""
+Write-Host "To auto-start on Windows login:" -ForegroundColor Yellow
+Write-Host "  1. Press Win+R, type: shell:startup"
+Write-Host "  2. Create a shortcut to $TargetFile in the startup folder"
