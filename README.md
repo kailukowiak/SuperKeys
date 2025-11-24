@@ -2,6 +2,10 @@
 
 Cross-platform keyboard remapping using Caps Lock as a Hyper key. Edit once, sync everywhere.
 
+## Special Thanks
+
+This was initially inspired by https://github.com/Vonng/Capslock.
+
 ## What This Does
 
 Transforms Caps Lock into a powerful "Hyper" modifier key with vim-style navigation and editing shortcuts that work consistently across Linux, Mac, and Windows.
