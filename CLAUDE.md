@@ -48,9 +48,12 @@ SuperKeys/
 
 ### Windows: `windows/keymap.ahk`
 - AutoHotkey v2 syntax (requires `#Requires AutoHotkey v2.0`)
-- Uses `CapsLock & key::` for hyper combinations
-- Tracks `CapsUsedAsModifier` flag for tap-vs-hold Escape behavior
-- Modifier check: `GetKeyState("Shift")` for shift-aware shortcuts
+- Uses `#HotIf GetKeyState("CapsLock", "P")` for context-sensitive hotkeys (instant response)
+- Tap detection: tracks press time + modifier flag; Escape sent only if < 200ms and no other key pressed
+- Shift variants defined explicitly (e.g., `+h::` for Shift+H while CapsLock held)
+
+**Why `#HotIf` instead of `CapsLock & key`:**
+The custom combination syntax (`CapsLock & key::`) makes CapsLock a "prefix key" - AHK waits to see if another key follows, causing input lag. The `#HotIf` approach checks physical key state instantly, matching keyd/Karabiner behavior.
 
 ## Development Guidelines
 
@@ -82,10 +85,16 @@ To add a new hyper shortcut across all platforms:
    ```
 
 3. **Windows** (`windows/keymap.ahk`):
+   Add inside the `#HotIf GetKeyState("CapsLock", "P")` block:
    ```autohotkey
-   CapsLock & newkey:: {
-       MarkCapsUsed()
+   newkey:: {
+       MarkUsed()
        Send "{target_key}"  ; or "^{key}" for Ctrl+key
+   }
+   ; If shift variant needed:
+   +newkey:: {
+       MarkUsed()
+       Send "+{target_key}"
    }
    ```
 
@@ -116,6 +125,21 @@ This symlink approach ensures:
 - Config changes sync via git pull
 - Single source of truth in the repository
 - Easy rollback by removing symlink
+
+### Windows Installer Options
+
+The Windows installer (`windows/install.ps1`) supports command-line switches:
+```powershell
+.\install.ps1              # Interactive install with autostart prompt
+.\install.ps1 -NoAutostart # Skip autostart setup
+.\install.ps1 -Uninstall   # Remove SuperKeys completely
+```
+
+The installer:
+- Auto-detects AutoHotkey v2 installation location
+- Creates startup shortcut in user's Startup folder (optional)
+- Offers to launch SuperKeys immediately
+- Backs up existing configs instead of failing
 
 ## Common Tasks
 
@@ -150,6 +174,16 @@ Note the intentional differences for terminal compatibility:
 - **Linux**: Check `sudo systemctl status keyd` and `keyd monitor` for debugging
 - **macOS**: Use Karabiner-EventViewer.app to see key events
 - **Windows**: AHK v2 includes a built-in key history viewer (right-click tray → "Open")
+
+### Windows-Specific Issues
+
+**Tap-for-Escape not working reliably:**
+- Adjust `TapTimeout` in `keymap.ahk` (default: 200ms). Lower = faster tap required, higher = more forgiving
+- Ensure no other AHK scripts are intercepting CapsLock
+
+**Keys not responding while CapsLock held:**
+- The script uses `#HotIf GetKeyState("CapsLock", "P")` which checks physical key state
+- If issues persist, check Windows key repeat settings and other keyboard software
 
 ## External Dependencies
 

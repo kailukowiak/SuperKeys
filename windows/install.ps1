@@ -1,92 +1,212 @@
+# SuperKeys Windows Installer
 # IMPORTANT: This script requires either:
 # 1. Windows Developer Mode enabled, OR
 # 2. Running PowerShell as Administrator
 
-# Check if AutoHotkey is installed
-$AhkInstalled = Get-Command "AutoHotkey" -ErrorAction SilentlyContinue
-# Common default install paths for v1 and v2
-$AhkPathV1 = "${env:ProgramFiles}\AutoHotkey\AutoHotkey.exe"
-$AhkPathV2 = "${env:ProgramFiles}\AutoHotkey\v2\AutoHotkey.exe"
+param(
+    [switch]$Uninstall,
+    [switch]$NoAutostart
+)
 
-if (-not $AhkInstalled -and -not (Test-Path $AhkPathV1) -and -not (Test-Path $AhkPathV2)) {
-    Write-Host "Error: AutoHotkey is not detected." -ForegroundColor Red
-    Write-Host "Please install AutoHotkey (v1.1 or v2): https://www.autohotkey.com/"
-    Write-Host "If installed, ensure it is in your PATH or installed to the default location."
+# ============================================
+# Find AutoHotkey Installation
+# ============================================
+function Find-AutoHotkey {
+    # Check common locations
+    $locations = @(
+        "${env:ProgramFiles}\AutoHotkey\v2\AutoHotkey64.exe",
+        "${env:ProgramFiles}\AutoHotkey\v2\AutoHotkey32.exe",
+        "${env:ProgramFiles}\AutoHotkey\v2\AutoHotkey.exe",
+        "${env:ProgramFiles}\AutoHotkey\AutoHotkey.exe",
+        "${env:ProgramFiles(x86)}\AutoHotkey\v2\AutoHotkey.exe",
+        "${env:ProgramFiles(x86)}\AutoHotkey\AutoHotkey.exe",
+        "${env:LOCALAPPDATA}\Programs\AutoHotkey\v2\AutoHotkey64.exe",
+        "${env:LOCALAPPDATA}\Programs\AutoHotkey\v2\AutoHotkey.exe"
+    )
+
+    foreach ($loc in $locations) {
+        if (Test-Path $loc) {
+            return $loc
+        }
+    }
+
+    # Try PATH
+    $inPath = Get-Command "AutoHotkey64.exe" -ErrorAction SilentlyContinue
+    if ($inPath) { return $inPath.Source }
+
+    $inPath = Get-Command "AutoHotkey.exe" -ErrorAction SilentlyContinue
+    if ($inPath) { return $inPath.Source }
+
+    return $null
+}
+
+$AhkExe = Find-AutoHotkey
+
+if (-not $AhkExe) {
+    Write-Host "Error: AutoHotkey v2 is not installed." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Please install AutoHotkey v2 from: https://www.autohotkey.com/" -ForegroundColor Yellow
+    Write-Host "Download the installer and select 'v2' during installation."
     exit 1
 }
 
-# Get the absolute path of the config file inside the repo
+Write-Host "Found AutoHotkey: $AhkExe" -ForegroundColor Gray
+
+# ============================================
+# Path Configuration
+# ============================================
 $RepoConfig = Join-Path $PSScriptRoot "keymap.ahk"
 $TargetDir = "$env:USERPROFILE\Documents\AutoHotkey"
 $TargetFile = "$TargetDir\keymap.ahk"
+$StartupFolder = [Environment]::GetFolderPath('Startup')
+$StartupShortcut = Join-Path $StartupFolder "SuperKeys.lnk"
 
-# Ensure directory exists
+# ============================================
+# Uninstall Mode
+# ============================================
+if ($Uninstall) {
+    Write-Host "Uninstalling SuperKeys..." -ForegroundColor Yellow
+
+    # Remove startup shortcut
+    if (Test-Path $StartupShortcut) {
+        Remove-Item $StartupShortcut -Force
+        Write-Host "✓ Removed autostart shortcut" -ForegroundColor Green
+    }
+
+    # Remove symlink
+    if (Test-Path $TargetFile) {
+        Remove-Item $TargetFile -Force
+        Write-Host "✓ Removed config symlink" -ForegroundColor Green
+    }
+
+    # Kill running instance
+    Get-Process | Where-Object { $_.MainWindowTitle -like "*SuperKeys*" -or $_.ProcessName -eq "AutoHotkey64" -or $_.ProcessName -eq "AutoHotkey" } | ForEach-Object {
+        $_.CloseMainWindow() | Out-Null
+    }
+
+    Write-Host ""
+    Write-Host "SuperKeys has been uninstalled." -ForegroundColor Green
+    exit 0
+}
+
+# ============================================
+# Install: Create Directory
+# ============================================
 if (-not (Test-Path $TargetDir)) {
     Write-Host "Creating directory $TargetDir"
     New-Item -ItemType Directory -Path $TargetDir | Out-Null
 }
 
-# Check if config already exists
+# ============================================
+# Install: Create Symlink
+# ============================================
+$NeedSymlink = $true
+
 if (Test-Path $TargetFile) {
     $item = Get-Item $TargetFile
     if ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
-        # It's a symlink - check if it points to our repo
+        # It's a symlink
         $currentTarget = $item.Target
         if ($currentTarget -eq $RepoConfig) {
-            Write-Host "✓ SuperKeys is already installed and up to date" -ForegroundColor Green
-            Write-Host "  Symlink: $TargetFile -> $RepoConfig"
-            exit 0
+            Write-Host "✓ Config symlink already exists" -ForegroundColor Green
+            $NeedSymlink = $false
         } else {
-            Write-Host "Error: A symlink already exists but points to a different location:" -ForegroundColor Red
-            Write-Host "  Current: $TargetFile -> $currentTarget"
-            Write-Host "  Expected: $RepoConfig"
-            Write-Host ""
-            Write-Host "To reinstall, first remove the existing symlink:"
-            Write-Host "  Remove-Item $TargetFile"
-            exit 1
+            Write-Host "Removing old symlink pointing to: $currentTarget" -ForegroundColor Yellow
+            Remove-Item $TargetFile -Force
         }
     } else {
-        # It's a regular file
-        Write-Host "Error: An existing config file was found at $TargetFile" -ForegroundColor Red
+        # Regular file - back it up
+        $backupPath = "${TargetFile}.bak"
+        Write-Host "Backing up existing config to: $backupPath" -ForegroundColor Yellow
+        Move-Item $TargetFile $backupPath -Force
+    }
+}
+
+if ($NeedSymlink) {
+    Write-Host "Creating symlink: $TargetFile -> $RepoConfig"
+    try {
+        New-Item -ItemType SymbolicLink -Path $TargetFile -Target $RepoConfig -ErrorAction Stop | Out-Null
+        Write-Host "✓ Symlink created successfully" -ForegroundColor Green
+    } catch {
+        Write-Host "Error: Failed to create symlink" -ForegroundColor Red
         Write-Host ""
-        Write-Host "To avoid data loss, this script will not overwrite it."
-        Write-Host "Please manually backup or remove the existing file:"
-        Write-Host "  Move-Item $TargetFile ${TargetFile}.bak"
-        Write-Host "  Remove-Item $TargetFile"
+        Write-Host "This script requires either:" -ForegroundColor Yellow
+        Write-Host "  1. Windows Developer Mode enabled"
+        Write-Host "     Settings > System > For developers > Developer Mode"
         Write-Host ""
-        Write-Host "Then run this script again."
+        Write-Host "  2. OR run PowerShell as Administrator"
         exit 1
     }
 }
 
-# Create the Symbolic Link
-Write-Host "Linking $RepoConfig -> $TargetFile"
-try {
-    New-Item -ItemType SymbolicLink -Path $TargetFile -Target $RepoConfig -ErrorAction Stop | Out-Null
-} catch {
-    Write-Host "Error: Failed to create symlink" -ForegroundColor Red
-    Write-Host "This script requires either:" -ForegroundColor Yellow
-    Write-Host "  1. Windows Developer Mode enabled, OR"
-    Write-Host "  2. Running PowerShell as Administrator"
-    Write-Host ""
-    Write-Host "To enable Developer Mode: Settings > Update & Security > For developers > Developer Mode"
-    exit 1
+# ============================================
+# Install: Setup Autostart
+# ============================================
+$SetupAutostart = $false
+
+if (-not $NoAutostart) {
+    if (Test-Path $StartupShortcut) {
+        Write-Host "✓ Autostart shortcut already exists" -ForegroundColor Green
+    } else {
+        # Ask user
+        Write-Host ""
+        $response = Read-Host "Would you like SuperKeys to start automatically with Windows? [Y/n]"
+        if ($response -eq "" -or $response -match "^[Yy]") {
+            $SetupAutostart = $true
+        }
+    }
 }
 
-# Verify symlink was created
-if (-not (Test-Path $TargetFile)) {
-    Write-Host "Error: Failed to create symlink" -ForegroundColor Red
-    exit 1
+if ($SetupAutostart) {
+    try {
+        $WshShell = New-Object -ComObject WScript.Shell
+        $Shortcut = $WshShell.CreateShortcut($StartupShortcut)
+        $Shortcut.TargetPath = $AhkExe
+        $Shortcut.Arguments = "`"$TargetFile`""
+        $Shortcut.WorkingDirectory = $TargetDir
+        $Shortcut.Description = "SuperKeys - Hyper Key Configuration"
+        $Shortcut.Save()
+        Write-Host "✓ Autostart shortcut created" -ForegroundColor Green
+    } catch {
+        Write-Host "Warning: Could not create autostart shortcut" -ForegroundColor Yellow
+        Write-Host "  You can manually add a shortcut to: $TargetFile"
+        Write-Host "  In the Startup folder: $StartupFolder"
+    }
 }
 
-Write-Host "✓ Symlink created successfully" -ForegroundColor Green
+# ============================================
+# Install: Launch SuperKeys
+# ============================================
 Write-Host ""
-Write-Host "Done! Your SuperKeys configuration is ready." -ForegroundColor Green
+$launch = Read-Host "Would you like to start SuperKeys now? [Y/n]"
+if ($launch -eq "" -or $launch -match "^[Yy]") {
+    # Kill any existing instance first
+    Get-Process | Where-Object { $_.ProcessName -match "AutoHotkey" } | ForEach-Object {
+        try {
+            $_.CloseMainWindow() | Out-Null
+            Start-Sleep -Milliseconds 500
+        } catch {}
+    }
+
+    Start-Process -FilePath $AhkExe -ArgumentList "`"$TargetFile`""
+    Write-Host "✓ SuperKeys is now running" -ForegroundColor Green
+}
+
+# ============================================
+# Done
+# ============================================
 Write-Host ""
-Write-Host "To activate SuperKeys:" -ForegroundColor Yellow
-Write-Host "  1. Double-click: $TargetFile"
-Write-Host "  2. Or run: AutoHotkey.exe `"$TargetFile`""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  SuperKeys installed successfully!" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "To auto-start on Windows login:" -ForegroundColor Yellow
-Write-Host "  1. Press Win+R, type: shell:startup"
-Write-Host "  2. Create a shortcut to $TargetFile in the startup folder"
+Write-Host "Usage:" -ForegroundColor Yellow
+Write-Host "  - Tap CapsLock for Escape"
+Write-Host "  - Hold CapsLock + HJKL for arrow keys"
+Write-Host "  - Hold CapsLock + other keys for shortcuts"
+Write-Host ""
+Write-Host "Management:" -ForegroundColor Yellow
+Write-Host "  - Right-click tray icon to reload/exit"
+Write-Host "  - Re-run this script to reinstall"
+Write-Host "  - Run with -Uninstall to remove"
+Write-Host ""

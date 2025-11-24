@@ -3,239 +3,258 @@
 ; AutoHotkey v2.0
 ;
 ; CapsLock: tap for Escape, hold for Hyper key
+; This implementation uses #HotIf for instant response (no prefix key delay)
 
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 SendMode "Input"
 SetWorkingDir A_ScriptDir
 
-; Disable CapsLock for its normal functionality
+; ============================================
+; Configuration
+; ============================================
+global TapTimeout := 200  ; ms - max time for a "tap" to register as Escape
+
+; ============================================
+; State Tracking
+; ============================================
+global CapsDownTime := 0
+global CapsUsedAsModifier := false
+
+; Disable CapsLock LED/toggle state
 SetCapsLockState "AlwaysOff"
 
-; Track whether CapsLock was used as modifier
-CapsUsedAsModifier := false
-
-; CapsLock detection: tap for Escape, hold for Hyper
+; ============================================
+; CapsLock Press/Release Handling
+; ============================================
+; On CapsLock down: record time, reset modifier flag
 *CapsLock:: {
-    global CapsUsedAsModifier
+    global CapsDownTime, CapsUsedAsModifier
+    CapsDownTime := A_TickCount
     CapsUsedAsModifier := false
-    KeyWait "CapsLock"
 }
 
+; On CapsLock up: send Escape if it was a quick tap with no other keys
 *CapsLock up:: {
-    global CapsUsedAsModifier
-    if (!CapsUsedAsModifier) {
+    global CapsDownTime, CapsUsedAsModifier, TapTimeout
+    elapsed := A_TickCount - CapsDownTime
+    if (!CapsUsedAsModifier && elapsed < TapTimeout) {
         Send "{Escape}"
     }
-    CapsUsedAsModifier := false
 }
 
-; Helper function to mark CapsLock as used with a key
-MarkCapsUsed() {
-    global CapsUsedAsModifier
-    CapsUsedAsModifier := true
+; Helper: mark that CapsLock was used as a modifier
+MarkUsed() {
+    global CapsUsedAsModifier := true
 }
 
 ; ============================================
-; Caps+Esc: Toggle CapsLock
+; Context: CapsLock is physically held down
 ; ============================================
-CapsLock & Esc:: {
-    MarkCapsUsed()
+#HotIf GetKeyState("CapsLock", "P")
+
+; --- Toggle real CapsLock ---
+Esc:: {
+    MarkUsed()
     SetCapsLockState !GetKeyState("CapsLock", "T")
 }
 
-; ============================================
-; Vim-style Navigation (HJKL)
-; ============================================
-CapsLock & h:: {
-    MarkCapsUsed()
-    if GetKeyState("Shift")
-        Send "+{Left}"
-    else
-        Send "{Left}"
+; --- Vim Navigation (HJKL) ---
+h:: {
+    MarkUsed()
+    Send "{Left}"
+}
++h:: {  ; Shift+H while CapsLock held = select left
+    MarkUsed()
+    Send "+{Left}"
 }
 
-CapsLock & j:: {
-    MarkCapsUsed()
-    if GetKeyState("Shift")
-        Send "+{Down}"
-    else
-        Send "{Down}"
+j:: {
+    MarkUsed()
+    Send "{Down}"
+}
++j:: {
+    MarkUsed()
+    Send "+{Down}"
 }
 
-CapsLock & k:: {
-    MarkCapsUsed()
-    if GetKeyState("Shift")
-        Send "+{Up}"
-    else
-        Send "{Up}"
+k:: {
+    MarkUsed()
+    Send "{Up}"
+}
++k:: {
+    MarkUsed()
+    Send "+{Up}"
 }
 
-CapsLock & l:: {
-    MarkCapsUsed()
-    if GetKeyState("Shift")
-        Send "+{Right}"
-    else
-        Send "{Right}"
+l:: {
+    MarkUsed()
+    Send "{Right}"
+}
++l:: {
+    MarkUsed()
+    Send "+{Right}"
 }
 
-; ============================================
-; Word/Line/Page Navigation
-; ============================================
-CapsLock & a:: {
-    MarkCapsUsed()
+; --- Word/Line/Page Navigation ---
+a:: {
+    MarkUsed()
     Send "^{Left}"  ; Word left
 }
++a:: {
+    MarkUsed()
+    Send "^+{Left}"  ; Select word left
+}
 
-CapsLock & e:: {
-    MarkCapsUsed()
+e:: {
+    MarkUsed()
     Send "^{Right}"  ; Word right
 }
++e:: {
+    MarkUsed()
+    Send "^+{Right}"  ; Select word right
+}
 
-CapsLock & u:: {
-    MarkCapsUsed()
+u:: {
+    MarkUsed()
     Send "{Home}"  ; Line start
 }
++u:: {
+    MarkUsed()
+    Send "+{Home}"  ; Select to line start
+}
 
-CapsLock & o:: {
-    MarkCapsUsed()
+o:: {
+    MarkUsed()
     Send "{End}"  ; Line end
 }
-
-CapsLock & i:: {
-    MarkCapsUsed()
-    Send "{End}"  ; Line end (alternate)
++o:: {
+    MarkUsed()
+    Send "+{End}"  ; Select to line end
 }
 
-CapsLock & d:: {
-    MarkCapsUsed()
+i:: {
+    MarkUsed()
+    Send "{End}"  ; Line end (alternate)
+}
++i:: {
+    MarkUsed()
+    Send "+{End}"  ; Select to line end
+}
+
+d:: {
+    MarkUsed()
     Send "{PgDn}"  ; Page down
 }
 
-CapsLock & f:: {
-    MarkCapsUsed()
+f:: {
+    MarkUsed()
     Send "{PgUp}"  ; Page up
 }
 
-; ============================================
-; Deletion
-; ============================================
-CapsLock & n:: {
-    MarkCapsUsed()
+; --- Deletion ---
+n:: {
+    MarkUsed()
     Send "^{Backspace}"  ; Delete word backward
 }
 
-CapsLock & m:: {
-    MarkCapsUsed()
+m:: {
+    MarkUsed()
     Send "{Backspace}"  ; Delete char backward
 }
 
-CapsLock & ,:: {
-    MarkCapsUsed()
+,:: {
+    MarkUsed()
     Send "{Delete}"  ; Delete char forward
 }
 
-CapsLock & .:: {
-    MarkCapsUsed()
+.:: {
+    MarkUsed()
     Send "^{Delete}"  ; Delete word forward
 }
 
-; ============================================
-; Clipboard (Cut/Copy/Paste)
-; ============================================
-CapsLock & c:: {
-    MarkCapsUsed()
+; --- Clipboard ---
+c:: {
+    MarkUsed()
     Send "^c"  ; Copy
 }
 
-CapsLock & v:: {
-    MarkCapsUsed()
+v:: {
+    MarkUsed()
     Send "^v"  ; Paste
 }
 
-CapsLock & x:: {
-    MarkCapsUsed()
+x:: {
+    MarkUsed()
     Send "^x"  ; Cut
 }
 
-; ============================================
-; Window Control
-; ============================================
-CapsLock & w:: {
-    MarkCapsUsed()
+; --- Window Control ---
+w:: {
+    MarkUsed()
     Send "^w"  ; Close tab/window
 }
 
-CapsLock & q:: {
-    MarkCapsUsed()
-    Send "!{F4}"  ; Quit application (Alt+F4 on Windows)
+q:: {
+    MarkUsed()
+    Send "!{F4}"  ; Quit application
 }
 
-CapsLock & Tab:: {
-    MarkCapsUsed()
-    if GetKeyState("Shift")
-        Send "+!{Tab}"  ; Switch windows reverse
-    else
-        Send "!{Tab}"  ; Switch windows
+Tab:: {
+    MarkUsed()
+    Send "!{Tab}"  ; Switch windows
+}
++Tab:: {
+    MarkUsed()
+    Send "+!{Tab}"  ; Switch windows (reverse)
 }
 
-; ============================================
-; App Shortcuts (Ctrl+Numbers)
-; ============================================
-CapsLock & 1:: {
-    MarkCapsUsed()
+; --- App Shortcuts (Ctrl+Number) ---
+1:: {
+    MarkUsed()
     Send "^1"
 }
-
-CapsLock & 2:: {
-    MarkCapsUsed()
+2:: {
+    MarkUsed()
     Send "^2"
 }
-
-CapsLock & 3:: {
-    MarkCapsUsed()
+3:: {
+    MarkUsed()
     Send "^3"
 }
-
-CapsLock & 4:: {
-    MarkCapsUsed()
+4:: {
+    MarkUsed()
     Send "^4"
 }
-
-CapsLock & 5:: {
-    MarkCapsUsed()
+5:: {
+    MarkUsed()
     Send "^5"
 }
-
-CapsLock & 6:: {
-    MarkCapsUsed()
+6:: {
+    MarkUsed()
     Send "^6"
 }
-
-CapsLock & 7:: {
-    MarkCapsUsed()
+7:: {
+    MarkUsed()
     Send "^7"
 }
-
-CapsLock & 8:: {
-    MarkCapsUsed()
+8:: {
+    MarkUsed()
     Send "^8"
 }
-
-CapsLock & 9:: {
-    MarkCapsUsed()
+9:: {
+    MarkUsed()
     Send "^9"
 }
-
-CapsLock & 0:: {
-    MarkCapsUsed()
+0:: {
+    MarkUsed()
     Send "^0"
 }
 
-; ============================================
-; Language/Input Switcher
-; ============================================
-CapsLock & Space:: {
-    MarkCapsUsed()
-    Send "^{Space}"  ; Ctrl+Space (common for input switching)
+; --- Language/Input Switcher ---
+Space:: {
+    MarkUsed()
+    Send "^{Space}"
 }
+
+#HotIf  ; End CapsLock context
