@@ -84,4 +84,4 @@ Changes take effect immediately via the symlink. Commit and push to sync across 
 
 ## License
 
-MIT (or add your preferred license)
+MIT - See [LICENSE](LICENSE) for details
