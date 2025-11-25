@@ -1,32 +1,34 @@
 ; SuperKeys - Cross-platform Hyper Key Configuration
 ; Caps Lock as Hyper key with vim-style navigation
-; AutoHotkey v1.1
+; AutoHotkey v2.0
 ;
 ; CapsLock: tap for Escape, hold for Hyper key
 
-#NoEnv
+#Requires AutoHotkey v2.0
 #SingleInstance Force
-SendMode Input
-SetWorkingDir %A_ScriptDir%
+SendMode "Input"
+SetWorkingDir A_ScriptDir
 
 ; Disable CapsLock for its normal functionality
-SetCapsLockState, AlwaysOff
+SetCapsLockState "AlwaysOff"
 
 ; Track whether CapsLock was used as modifier
-global CapsUsedAsModifier := false
+CapsUsedAsModifier := false
 
 ; CapsLock detection: tap for Escape, hold for Hyper
-*CapsLock::
+*CapsLock:: {
+    global CapsUsedAsModifier
     CapsUsedAsModifier := false
-    KeyWait, CapsLock
-return
+    KeyWait "CapsLock"
+}
 
-*CapsLock up::
+*CapsLock up:: {
+    global CapsUsedAsModifier
     if (!CapsUsedAsModifier) {
-        Send {Escape}
+        Send "{Escape}"
     }
     CapsUsedAsModifier := false
-return
+}
 
 ; Helper function to mark CapsLock as used with a key
 MarkCapsUsed() {
@@ -37,203 +39,203 @@ MarkCapsUsed() {
 ; ============================================
 ; Caps+Esc: Toggle CapsLock
 ; ============================================
-CapsLock & Esc::
+CapsLock & Esc:: {
     MarkCapsUsed()
-    SetCapsLockState % !GetKeyState("CapsLock", "T")
-return
+    SetCapsLockState !GetKeyState("CapsLock", "T")
+}
 
 ; ============================================
 ; Vim-style Navigation (HJKL)
 ; ============================================
-CapsLock & h::
+CapsLock & h:: {
     MarkCapsUsed()
     if GetKeyState("Shift")
-        Send +{Left}
+        Send "+{Left}"
     else
-        Send {Left}
-return
+        Send "{Left}"
+}
 
-CapsLock & j::
+CapsLock & j:: {
     MarkCapsUsed()
     if GetKeyState("Shift")
-        Send +{Down}
+        Send "+{Down}"
     else
-        Send {Down}
-return
+        Send "{Down}"
+}
 
-CapsLock & k::
+CapsLock & k:: {
     MarkCapsUsed()
     if GetKeyState("Shift")
-        Send +{Up}
+        Send "+{Up}"
     else
-        Send {Up}
-return
+        Send "{Up}"
+}
 
-CapsLock & l::
+CapsLock & l:: {
     MarkCapsUsed()
     if GetKeyState("Shift")
-        Send +{Right}
+        Send "+{Right}"
     else
-        Send {Right}
-return
+        Send "{Right}"
+}
 
 ; ============================================
 ; Word/Line/Page Navigation
 ; ============================================
-CapsLock & a::
+CapsLock & a:: {
     MarkCapsUsed()
-    Send ^{Left}  ; Word left
-return
+    Send "^{Left}"  ; Word left
+}
 
-CapsLock & e::
+CapsLock & e:: {
     MarkCapsUsed()
-    Send ^{Right}  ; Word right
-return
+    Send "^{Right}"  ; Word right
+}
 
-CapsLock & u::
+CapsLock & u:: {
     MarkCapsUsed()
-    Send {Home}  ; Line start
-return
+    Send "{Home}"  ; Line start
+}
 
-CapsLock & o::
+CapsLock & o:: {
     MarkCapsUsed()
-    Send {End}  ; Line end
-return
+    Send "{End}"  ; Line end
+}
 
-CapsLock & i::
+CapsLock & i:: {
     MarkCapsUsed()
-    Send {End}  ; Line end (alternate)
-return
+    Send "{End}"  ; Line end (alternate)
+}
 
-CapsLock & d::
+CapsLock & d:: {
     MarkCapsUsed()
-    Send {PgDn}  ; Page down
-return
+    Send "{PgDn}"  ; Page down
+}
 
-CapsLock & f::
+CapsLock & f:: {
     MarkCapsUsed()
-    Send {PgUp}  ; Page up
-return
+    Send "{PgUp}"  ; Page up
+}
 
 ; ============================================
 ; Deletion
 ; ============================================
-CapsLock & n::
+CapsLock & n:: {
     MarkCapsUsed()
-    Send ^{Backspace}  ; Delete word backward
-return
+    Send "^{Backspace}"  ; Delete word backward
+}
 
-CapsLock & m::
+CapsLock & m:: {
     MarkCapsUsed()
-    Send {Backspace}  ; Delete char backward
-return
+    Send "{Backspace}"  ; Delete char backward
+}
 
-CapsLock & ,::
+CapsLock & ,:: {
     MarkCapsUsed()
-    Send {Delete}  ; Delete char forward
-return
+    Send "{Delete}"  ; Delete char forward
+}
 
-CapsLock & .::
+CapsLock & .:: {
     MarkCapsUsed()
-    Send ^{Delete}  ; Delete word forward
-return
+    Send "^{Delete}"  ; Delete word forward
+}
 
 ; ============================================
 ; Clipboard (Cut/Copy/Paste)
 ; ============================================
-CapsLock & c::
+CapsLock & c:: {
     MarkCapsUsed()
-    Send ^c  ; Copy
-return
+    Send "^c"  ; Copy
+}
 
-CapsLock & v::
+CapsLock & v:: {
     MarkCapsUsed()
-    Send ^v  ; Paste
-return
+    Send "^v"  ; Paste
+}
 
-CapsLock & x::
+CapsLock & x:: {
     MarkCapsUsed()
-    Send ^x  ; Cut
-return
+    Send "^x"  ; Cut
+}
 
 ; ============================================
 ; Window Control
 ; ============================================
-CapsLock & w::
+CapsLock & w:: {
     MarkCapsUsed()
-    Send ^w  ; Close tab/window
-return
+    Send "^w"  ; Close tab/window
+}
 
-CapsLock & q::
+CapsLock & q:: {
     MarkCapsUsed()
-    Send !{F4}  ; Quit application (Alt+F4 on Windows)
-return
+    Send "!{F4}"  ; Quit application (Alt+F4 on Windows)
+}
 
-CapsLock & Tab::
+CapsLock & Tab:: {
     MarkCapsUsed()
     if GetKeyState("Shift")
-        Send +!{Tab}  ; Switch windows reverse
+        Send "+!{Tab}"  ; Switch windows reverse
     else
-        Send !{Tab}  ; Switch windows
-return
+        Send "!{Tab}"  ; Switch windows
+}
 
 ; ============================================
 ; App Shortcuts (Ctrl+Numbers)
 ; ============================================
-CapsLock & 1::
+CapsLock & 1:: {
     MarkCapsUsed()
-    Send ^1
-return
+    Send "^1"
+}
 
-CapsLock & 2::
+CapsLock & 2:: {
     MarkCapsUsed()
-    Send ^2
-return
+    Send "^2"
+}
 
-CapsLock & 3::
+CapsLock & 3:: {
     MarkCapsUsed()
-    Send ^3
-return
+    Send "^3"
+}
 
-CapsLock & 4::
+CapsLock & 4:: {
     MarkCapsUsed()
-    Send ^4
-return
+    Send "^4"
+}
 
-CapsLock & 5::
+CapsLock & 5:: {
     MarkCapsUsed()
-    Send ^5
-return
+    Send "^5"
+}
 
-CapsLock & 6::
+CapsLock & 6:: {
     MarkCapsUsed()
-    Send ^6
-return
+    Send "^6"
+}
 
-CapsLock & 7::
+CapsLock & 7:: {
     MarkCapsUsed()
-    Send ^7
-return
+    Send "^7"
+}
 
-CapsLock & 8::
+CapsLock & 8:: {
     MarkCapsUsed()
-    Send ^8
-return
+    Send "^8"
+}
 
-CapsLock & 9::
+CapsLock & 9:: {
     MarkCapsUsed()
-    Send ^9
-return
+    Send "^9"
+}
 
-CapsLock & 0::
+CapsLock & 0:: {
     MarkCapsUsed()
-    Send ^0
-return
+    Send "^0"
+}
 
 ; ============================================
 ; Language/Input Switcher
 ; ============================================
-CapsLock & Space::
+CapsLock & Space:: {
     MarkCapsUsed()
-    Send ^{Space}  ; Ctrl+Space (common for input switching)
-return
+    Send "^{Space}"  ; Ctrl+Space (common for input switching)
+}
