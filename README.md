@@ -121,7 +121,7 @@ Move-Item $env:USERPROFILE\Documents\AutoHotkey\keymap.ahk.bak keymap.ahk  # if 
 Edit the config files for your platform:
 - **Linux**: `linux/default.conf` (keyd syntax)
 - **Mac**: `mac/karabiner.json` (Karabiner-Elements JSON)
-- **Windows**: `windows/keymap.ahk` (AutoHotkey v1 syntax)
+- **Windows**: `windows/keymap.ahk` (AutoHotkey v2 syntax)
 
 Changes take effect immediately via the symlink. Commit and push to sync across machines.
 
@@ -134,7 +134,7 @@ Changes take effect immediately via the symlink. Commit and push to sync across 
 - [Karabiner-Elements](https://karabiner-elements.pqrs.org/)
 
 **Windows:**
-- [AutoHotkey v1.1](https://www.autohotkey.com/)
+- [AutoHotkey v2](https://www.autohotkey.com/)
 - Developer Mode enabled OR run PowerShell as Administrator
 
 ## Platform-Specific Notes
