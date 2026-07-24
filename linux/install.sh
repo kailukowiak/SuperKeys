@@ -59,7 +59,9 @@ if [ ! -d "$TARGET_DIR" ]; then
     mkdir -p "$TARGET_DIR"
 fi
 
-# Check if config already exists
+# Check if config already exists. Anything in the way is moved aside to a
+# timestamped backup rather than deleted, so re-pointing an old install at a
+# new checkout just works (and never silently loses a hand-written config).
 SYMLINK_ALREADY_EXISTS=false
 if [ -L "$TARGET_PATH" ]; then
     # It's a symlink - check if it points to our repo
@@ -69,25 +71,17 @@ if [ -L "$TARGET_PATH" ]; then
         echo "  Symlink: $TARGET_PATH -> $REPO_CONFIG"
         SYMLINK_ALREADY_EXISTS=true
     else
-        echo "Error: A symlink already exists but points to a different location:"
-        echo "  Current: $TARGET_PATH -> $CURRENT_TARGET"
-        echo "  Expected: $REPO_CONFIG"
-        echo ""
-        echo "To reinstall, first remove the existing symlink:"
-        echo "  sudo rm $TARGET_PATH"
-        exit 1
+        echo "Replacing existing symlink:"
+        echo "  Was: $TARGET_PATH -> $CURRENT_TARGET"
+        echo "  Now: $TARGET_PATH -> $REPO_CONFIG"
+        rm "$TARGET_PATH"
     fi
-elif [ -f "$TARGET_PATH" ]; then
-    # It's a regular file
-    echo "Error: An existing config file was found at $TARGET_PATH"
-    echo ""
-    echo "To avoid data loss, this script will not overwrite it."
-    echo "Please manually backup or remove the existing file:"
-    echo "  sudo mv $TARGET_PATH ${TARGET_PATH}.bak"
-    echo "  sudo rm $TARGET_PATH"
-    echo ""
-    echo "Then run this script again."
-    exit 1
+elif [ -e "$TARGET_PATH" ]; then
+    # A real file (or directory) - back it up before taking the path over
+    BACKUP_PATH="${TARGET_PATH}.bak.$(date +%Y%m%d%H%M%S)"
+    echo "Existing config found at $TARGET_PATH"
+    echo "Backing it up to $BACKUP_PATH"
+    mv "$TARGET_PATH" "$BACKUP_PATH"
 fi
 
 # Create the symbolic link if it doesn't already exist

@@ -18,9 +18,19 @@ else
     echo "No config found at $TARGET_PATH - nothing to remove."
 fi
 
-if [ -f "$TARGET_PATH.bak" ]; then
-    mv "$TARGET_PATH.bak" "$TARGET_PATH"
-    echo "✓ Restored backup config"
+# Restore the most recent backup, if the path is now free. Handles both the
+# legacy plain '.bak' and the timestamped '.bak.<YYYYmmddHHMMSS>' the
+# installer writes; the glob sorts oldest-to-newest, so the last hit wins.
+if [ ! -e "$TARGET_PATH" ]; then
+    RESTORE_FROM=""
+    for candidate in "$TARGET_PATH".bak "$TARGET_PATH".bak.*; do
+        [ -f "$candidate" ] && RESTORE_FROM="$candidate"
+    done
+
+    if [ -n "$RESTORE_FROM" ]; then
+        mv "$RESTORE_FROM" "$TARGET_PATH"
+        echo "✓ Restored backup config from $RESTORE_FROM"
+    fi
 fi
 
 if command -v keyd &> /dev/null && systemctl is-active --quiet keyd; then
