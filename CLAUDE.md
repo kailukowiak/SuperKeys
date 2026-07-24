@@ -47,8 +47,17 @@ SuperKeys/
 ### Linux: `linux/default.conf`
 - Uses keyd's simple `key = action` syntax
 - Sections: `[ids]` (device filter), `[main]` (base layer), `[hyper]` (hyper layer)
-- Modifier syntax: `C-` (Ctrl), `M-` (Alt), `S-` (Shift)
+- Modifier syntax: `C-` (Ctrl), `M-` (Alt), `S-` (Shift) - **right-hand side only**
 - Layer syntax: `overload(layer, tap_action)` for dual-function keys
+- Modifier *variants* go in composite layers - `[hyper+shift]`, `[hyper+alt]` -
+  because keyd rejects a modifier prefix on the left-hand side (`S-h = ...` is
+  an error, not a shift binding)
+- Key names are lowercase: `M-f4`, not `M-F4`
+- Keys unbound in a layer fall through to the layer below automatically; there
+  is no `fallthrough` directive in keyd v2
+- Always validate with `keyd check linux/default.conf` before committing -
+  keyd only reports these as warnings at load time, so a bad line silently
+  drops the binding on machines that never run the installer
 
 ### macOS: `mac/karabiner.json`
 - JSON format with `rules` array containing `manipulators`
@@ -60,7 +69,7 @@ SuperKeys/
 - AutoHotkey v2 syntax (requires `#Requires AutoHotkey v2.0`)
 - Uses `#HotIf GetKeyState("CapsLock", "P")` for context-sensitive hotkeys (instant response)
 - Tap detection: `A_PriorKey = "CapsLock"` at release means no other key was pressed while held → send Escape. No time limit, matching keyd's `overload()`
-- Navigation keys use `*key:: Send "{Blind}..."` so held modifiers fall through (Shift selects, Ctrl jumps words), matching keyd's `fallthrough = true`; keys with distinct shift behavior (e.g. `+p::` mute) are defined explicitly
+- Navigation keys use `*key:: Send "{Blind}..."` so held modifiers fall through (Shift selects, Ctrl jumps words), matching keyd, where keys unbound in a layer fall through to the layer below; keys with distinct shift behavior (e.g. `+p::` mute) are defined explicitly
 
 **Why `#HotIf` instead of `CapsLock & key`:**
 The custom combination syntax (`CapsLock & key::`) makes CapsLock a "prefix key" - AHK waits to see if another key follows, causing input lag. The `#HotIf` approach checks physical key state instantly, matching keyd/Karabiner behavior.
@@ -75,8 +84,13 @@ To add a new hyper shortcut across all platforms:
    ```ini
    [hyper]
    newkey = target_key
-   # or with modifiers:
+   # or with modifiers on the target:
    newkey = C-target_key
+
+   # a Shift variant is a separate binding in the composite layer,
+   # NOT `S-newkey` in [hyper]
+   [hyper+shift]
+   newkey = S-target_key
    ```
 
 2. **macOS** (`mac/karabiner.json`):

@@ -19,8 +19,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# keyd names that are layer options, not key bindings
-KEYD_NON_KEYS = {"fallthrough"}
+# keyd composite-layer suffix -> which modifier it represents
+KEYD_LAYER_MODS = {"shift": "shift", "alt": "alt"}
 
 # keyd key name -> AutoHotkey hotkey name
 KEYD_TO_AHK = {
@@ -37,27 +37,65 @@ KEYD_TO_KARABINER = {
 
 
 def parse_keyd(path):
-    """Return {(key, shift, alt)} bound in the [hyper] section."""
+    """Return {(key, shift, alt)} bound in [hyper] and its composite layers.
+
+    keyd has no modifier prefix on the left-hand side of a binding; the
+    modifier variants live in composite layers instead ([hyper+shift],
+    [hyper+alt]), so the section header is what carries shift/alt here.
+    """
     keys = set()
-    section = None
+    in_hyper = False
+    shift = alt = False
     for line in path.read_text().splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        m = re.match(r"\[(\w+)\]", line)
+        m = re.match(r"\[([\w+]+)\]$", line)
         if m:
-            section = m.group(1)
+            layers = m.group(1).split("+")
+            in_hyper = layers[0] == "hyper"
+            mods = set(layers[1:])
+            unknown = mods - set(KEYD_LAYER_MODS)
+            if in_hyper and unknown:
+                sys.exit(f"unrecognised keyd layer modifier(s): {', '.join(sorted(unknown))}")
+            shift = "shift" in mods
+            alt = "alt" in mods
             continue
-        if section != "hyper" or "=" not in line:
+        if not in_hyper or "=" not in line:
             continue
-        lhs = line.split("=", 1)[0].strip()
-        shift = lhs.startswith("S-")
-        alt = lhs.startswith("M-")
-        key = re.sub(r"^[SM]-", "", lhs).lower()
-        if key in KEYD_NON_KEYS:
-            continue
+        key = line.split("=", 1)[0].strip().lower()
         keys.add((key, shift, alt))
     return keys
+
+
+def lint_keyd(path):
+    """Flag keyd syntax that loads with warnings instead of failing loudly.
+
+    keyd only warns about these at load time, so a bad line silently drops the
+    binding. CI runners have no keyd, hence this stands in for `keyd check`.
+    """
+    errors = []
+    for n, raw in enumerate(path.read_text().splitlines(), 1):
+        line = raw.strip()
+        if not line or line.startswith("#") or line.startswith("[") or "=" not in line:
+            continue
+        lhs, rhs = (part.strip() for part in line.split("=", 1))
+        where = f"linux/default.conf:{n}"
+        if re.match(r"^[CMSAG]-", lhs):
+            errors.append(
+                f"{where}: '{lhs}' - keyd takes no modifier prefix on the left-hand "
+                f"side; put this in a composite layer such as [hyper+shift]"
+            )
+        if lhs == "fallthrough":
+            errors.append(
+                f"{where}: 'fallthrough' is not a keyd v2 directive; unbound keys "
+                f"already fall through to the layer below"
+            )
+        # Key names are lowercase - 'M-F4' parses as an invalid action
+        target = re.sub(r"^(?:[CMSAG]-)+", "", rhs)
+        if re.search(r"[A-Z]", target) and "(" not in target:
+            errors.append(f"{where}: '{rhs}' - keyd key names are lowercase")
+    return errors
 
 
 def parse_ahk(path):
@@ -103,7 +141,7 @@ def main():
     ahk = parse_ahk(ROOT / "windows" / "keymap.ahk")
     karabiner = parse_karabiner(ROOT / "mac" / "karabiner.json")
 
-    errors = []
+    errors = lint_keyd(ROOT / "linux" / "default.conf")
 
     for key, shift, alt in sorted(keyd):
         label = ("S-" if shift else "") + ("M-" if alt else "") + key

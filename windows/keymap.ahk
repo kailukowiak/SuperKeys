@@ -46,7 +46,7 @@ Esc:: {
 
 ; --- Vim Navigation (HJKL) ---
 ; {Blind} lets held modifiers fall through: Shift selects, Ctrl jumps words,
-; matching keyd's `fallthrough = true`.
+; matching keyd, where unbound keys in a layer fall through to the one below.
 *h:: Send "{Blind}{Left}"
 *j:: Send "{Blind}{Down}"
 *k:: Send "{Blind}{Up}"
