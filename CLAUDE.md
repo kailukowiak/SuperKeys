@@ -10,6 +10,8 @@ SuperKeys is a cross-platform keyboard remapping utility that transforms Caps Lo
 
 ```
 SuperKeys/
+├── bootstrap.sh         # curl|bash one-liner: clones to ~/.superkeys, installs or updates
+├── bootstrap.ps1        # irm|iex equivalent for Windows (uses return, never exit)
 ├── install              # Cross-platform installer (bash, auto-detects OS)
 ├── update               # Cross-platform updater: git pull + re-apply + reload
 ├── README.md            # User documentation with keyboard layout diagrams
@@ -135,6 +137,12 @@ All installers follow the same pattern:
 Because macOS is a merge, a plain `git pull` is not enough there - the `update`
 script (and `windows/update.ps1`) does pull + re-apply + reload on every
 platform, and is the documented way to sync machines.
+
+The `bootstrap.sh`/`bootstrap.ps1` one-liners wrap all of this: they clone to
+`~/.superkeys` (override: `SUPERKEYS_DIR`) on first run and dispatch to
+`update` on later runs, so the same command installs and updates. They are
+fetched from the `master` branch raw URL, so changes to them only reach users
+after merging. `SUPERKEYS_REPO` overrides the clone URL (used for testing).
 
 ### Windows Installer Options
 

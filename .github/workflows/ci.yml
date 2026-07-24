@@ -18,12 +18,12 @@ jobs:
         run: python3 scripts/check_parity.py
 
       - name: ShellCheck
-        run: shellcheck install update linux/*.sh mac/*.sh
+        run: shellcheck install update bootstrap.sh linux/*.sh mac/*.sh
 
       - name: PSScriptAnalyzer
         shell: pwsh
         run: |
           Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
-          $results = Invoke-ScriptAnalyzer -Path windows -Recurse -Severity Error
+          $results = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error
           $results | Format-Table -AutoSize
           if ($results) { exit 1 }

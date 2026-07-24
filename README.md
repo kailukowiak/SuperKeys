@@ -40,25 +40,39 @@ Your configs stay in this git repo. Install scripts create symlinks so changes s
 
 ## Installation
 
-Clone the repository:
+One command - it clones SuperKeys to `~/.superkeys` and runs the right
+installer for your OS. **Re-run the same command any time to update**; it
+finds the existing checkout for you, so you never need to remember where it
+lives.
+
+**Linux/Mac:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/kailukowiak/SuperKeys/master/bootstrap.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/kailukowiak/SuperKeys/master/bootstrap.ps1 | iex
+```
+
+Set `SUPERKEYS_DIR` to install somewhere other than `~/.superkeys` (use the
+same value on later runs, including from an existing manual clone).
+
+<details>
+<summary>Manual install (clone wherever you like)</summary>
 
 ```bash
 git clone https://github.com/kailukowiak/SuperKeys.git
 cd SuperKeys
+./install          # Linux/Mac
 ```
 
-Run the installer:
-
-**Linux/Mac:**
-```bash
-./install
-```
-
-**Windows:**
 ```powershell
 cd windows
-.\install.ps1
+.\install.ps1      # Windows
 ```
+
+</details>
 
 The installer will:
 - Check if required software is installed (and offer to install it via your package manager)
@@ -68,8 +82,10 @@ The installer will:
 
 ## Updating
 
-Don't just `git pull` - macOS needs the profile re-merged and Linux/Windows need
-the service or script reloaded. The update scripts do all of it in one step:
+**Easiest: re-run the install one-liner above.** It notices the existing
+checkout and updates it - pull, re-apply, reload - wherever you are.
+
+From inside the checkout, the update scripts do the same thing:
 
 **Linux/Mac:**
 ```bash
@@ -80,6 +96,9 @@ the service or script reloaded. The update scripts do all of it in one step:
 ```powershell
 .\windows\update.ps1
 ```
+
+Don't just `git pull` - macOS needs the profile re-merged and Linux/Windows
+need the service or script reloaded; the scripts handle all of it.
 
 On Linux and Windows the configs are symlinked, so a plain `git pull` does
 change the files - but the running service keeps the old config until reloaded.
