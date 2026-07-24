@@ -126,3 +126,7 @@ else
     echo "Warning: keyd service may not be running properly"
     echo "Check status with: sudo systemctl status keyd"
 fi
+
+# shellcheck source=linux/hints.sh
+. "$(cd "$(dirname "$0")" && pwd)/hints.sh"
+print_chrome_copy_hint

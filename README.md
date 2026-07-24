@@ -238,7 +238,7 @@ platforms still define the same keys (CI runs this too).
 ## Platform-Specific Notes
 
 ### Linux (keyd)
-- Clipboard emits `Ctrl+Shift+C/V/X` for terminal compatibility (caveat: `Ctrl+Shift+C` is DevTools in Chrome - use native `Ctrl+C` there)
+- Clipboard emits `Ctrl+Shift+C/V/X` for terminal compatibility (caveat: `Ctrl+Shift+C` is DevTools in Chrome, which offers no way to rebind it - either use native `Ctrl+C` there, or set up [keyd's per-app mapper](https://github.com/rvaiya/keyd#application-specific-remapping) to rewrite `Ctrl+Shift+C` back to `Ctrl+C` in Chrome; the installer prints the recipe when it detects Chrome. DevTools inspect stays available via `Ctrl+Shift+I`/`F12`)
 - App shortcuts emit `Alt+1-0` and `Alt+G/R/T` - bind these in your window manager to launch apps
 - Window switching uses `Alt+Tab`
 - Quit application uses `Alt+F4`
