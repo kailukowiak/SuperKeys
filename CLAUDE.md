@@ -58,7 +58,7 @@ SuperKeys/
 - AutoHotkey v2 syntax (requires `#Requires AutoHotkey v2.0`)
 - Uses `#HotIf GetKeyState("CapsLock", "P")` for context-sensitive hotkeys (instant response)
 - Tap detection: `A_PriorKey = "CapsLock"` at release means no other key was pressed while held → send Escape. No time limit, matching keyd's `overload()`
-- Navigation keys use `*key:: Send "{Blind}..."` so held modifiers fall through (Shift selects, Ctrl jumps words), matching keyd's `fallthrough = true`; keys with distinct shift behavior (e.g. `+z::` redo) are defined explicitly
+- Navigation keys use `*key:: Send "{Blind}..."` so held modifiers fall through (Shift selects, Ctrl jumps words), matching keyd's `fallthrough = true`; keys with distinct shift behavior (e.g. `+p::` mute) are defined explicitly
 
 **Why `#HotIf` instead of `CapsLock & key`:**
 The custom combination syntax (`CapsLock & key::`) makes CapsLock a "prefix key" - AHK waits to see if another key follows, causing input lag. The `#HotIf` approach checks physical key state instantly, matching keyd/Karabiner behavior.
@@ -162,15 +162,19 @@ When modifying shortcuts, ensure all three platforms behave consistently:
 - Same modifier behavior (Shift for selection, etc.)
 - Document any unavoidable platform differences in README.md
 
-### Clipboard Operations
-Note the intentional differences for terminal compatibility:
-- Linux: `Ctrl+Shift+C/V/X` (terminal-compatible)
-- macOS/Windows: Standard `Cmd+C/V/X` or `Ctrl+C/V/X`
+### Design Principle: App-Independent Bindings Only
+Every hyper binding must send literal keys (arrows, Home/End, PageUp/Down,
+Enter, Backspace/Delete) or resolve at the OS level (window switching, media
+keys, input switching). Do NOT add app-interpreted commands (find, undo,
+copy/paste, close-tab, select-all) - they behave differently per program
+(e.g. `Ctrl+F` is find in Chrome but cursor-forward in a shell), which
+defeats the muscle-memory goal. Those were deliberately removed; users fall
+back to each program's native shortcut.
 
 ## Code Style Conventions
 
 - **Comments**: Each config section should have a header comment explaining its purpose
-- **Ordering**: Group related shortcuts together (navigation, deletion, clipboard, etc.)
+- **Ordering**: Group related shortcuts together (navigation, deletion, media, etc.)
 - **Naming**: Use descriptive section/rule names that match across platforms
 
 ## Git Workflow

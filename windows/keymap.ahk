@@ -2,6 +2,11 @@
 ; Caps Lock as Hyper key with vim-style navigation
 ; AutoHotkey v2.0
 ;
+; Design principle: every binding here must send literal cursor/media keys or
+; resolve at the OS level, so it behaves identically in every app. Commands
+; that apps interpret themselves (find, undo, copy, close-tab, ...) are
+; deliberately NOT bound - use each program's native shortcut for those.
+;
 ; CapsLock: tap for Escape, hold for Hyper key
 ; This implementation uses #HotIf for instant response (no prefix key delay)
 
@@ -53,11 +58,8 @@ Esc:: {
 *d:: Send "{Blind}{PgDn}"    ; Page down
 *f:: Send "{Blind}{PgUp}"    ; Page up
 
-; --- Editing ---
-i:: Send "^a"    ; Select all
-z:: Send "^z"    ; Undo
-+z:: Send "^+z"  ; Redo
-/:: Send "^f"    ; Find
+; --- Home-Row Enter (literal key, universal) ---
+`;:: Send "{Enter}"
 
 ; --- Deletion ---
 n:: Send "^{Backspace}"  ; Delete word backward
@@ -65,23 +67,16 @@ m:: Send "{Backspace}"   ; Delete char backward
 ,:: Send "{Delete}"      ; Delete char forward
 .:: Send "^{Delete}"     ; Delete word forward
 
-; --- Clipboard ---
-c:: Send "^c"  ; Copy
-v:: Send "^v"  ; Paste
-x:: Send "^x"  ; Cut
-
-; --- Window Control ---
-w:: Send "^w"     ; Close tab/window
+; --- Window Control (OS-level, app-independent) ---
 q:: Send "!{F4}"  ; Quit application
 Tab:: Send "!{Tab}"    ; Switch windows
 +Tab:: Send "+!{Tab}"  ; Switch windows (reverse)
 
-; --- Tab Cycling ---
-[:: Send "^+{Tab}"  ; Previous tab
-]:: Send "^{Tab}"   ; Next tab
-
-; --- Terminal Shortcuts ---
-Enter:: Send "^{Enter}"
+; --- Media Controls (OS-level, app-independent) ---
+p:: Send "{Media_Play_Pause}"
++p:: Send "{Volume_Mute}"
+[:: Send "{Volume_Down}"
+]:: Send "{Volume_Up}"
 
 ; --- App Shortcuts (Ctrl+Number, Ctrl+G/R/T) ---
 1:: Send "^1"

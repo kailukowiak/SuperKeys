@@ -15,11 +15,20 @@ Transforms Caps Lock into a powerful "Hyper" modifier key with vim-style navigat
 - **Vim Navigation**: `Caps+H/J/K/L` for arrow keys
 - **Text Selection**: Add Shift for selecting while navigating
 - **Word/Line Navigation**: Quick movement with `A/E/U/O`
-- **Editing**: Select all, undo/redo, find with `I/Z/Shift+Z//`
 - **Smart Deletion**: Multiple delete modes with `N/M/,/.`
-- **Universal Clipboard**: `Caps+C/V/X` for copy/paste/cut (works in terminals!)
-- **Window Management**: Quick window/tab switching, tab cycling with `[/]`
+- **Home-Row Enter**: `Caps+;` for Enter without leaving home position
+- **Media Controls**: `Caps+P/[/]` for play-pause and volume
+- **Window Switching**: `Caps+Tab` / `Caps+Q`
 - **App Shortcuts**: Number keys for launching apps
+
+**Design principle - only keys that behave the same everywhere.** Every
+binding either sends literal keys (arrows, Home/End, PageUp/Down, Enter,
+Backspace/Delete) or resolves at the OS level (window switching, media,
+input switching). Shortcuts that apps interpret themselves - find, undo,
+copy/paste, close-tab - are deliberately *not* bound, because they mean
+different things in different programs (`Ctrl+F` is find in Chrome but
+cursor-forward in a shell). For those, use each program's native shortcut;
+your muscle memory for them already works.
 
 Your configs stay in this git repo. Install scripts create symlinks so changes sync across machines.
 
@@ -99,13 +108,13 @@ cd windows
 │  Esc  │ App │ App │ App │ App │ App │ App │ App │ App │ App │ App │              │
 │ TogCap│  1  │  2  │  3  │  4  │  5  │  6  │  7  │  8  │  9  │  0  │              │
 ├───────┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬─────┬─────┤
-│          │ Quit│Close│Word→│ App │ App │     │Line←│ All │Line→│     │ Tab←│ Tab→│
+│          │ Quit│     │Word→│ App │ App │     │Line←│     │Line→│ Play│ Vol-│ Vol+│
 │          │  Q  │  W  │  E  │  R  │  T  │  Y  │  U  │  I  │  O  │  P  │  [  │  ]  │
 ├──────────┴─┬───┴─┬───┴─┬───┴─┬───┴─┬───┴─┬───┴─┬───┴─┬───┴─┬───┴─┬───┴─┬───┴─────┤
-│  [HYPER]   │Word←│     │ PgDn│ PgUp│ App │  ←  │  ↓  │  ↑  │  →  │     │         │
+│  [HYPER]   │Word←│     │ PgDn│ PgUp│ App │  ←  │  ↓  │  ↑  │  →  │Enter│         │
 │ CAPS LOCK  │  A  │  S  │  D  │  F  │  G  │  H  │  J  │  K  │  L  │  ;  │         │
 ├────────────┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──────┤
-│               │ Undo│ Cut │ Copy│Paste│     │ Del │ Del │ Del │ Del │ Find│      │
+│               │     │     │     │     │     │ Del │ Del │ Del │ Del │     │      │
 │               │  Z  │  X  │  C  │  V  │  B  │  N  │  M  │  ,  │  .  │  /  │      │
 ├───────────────┼─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴──────┤
 │               │                      Space  (Input Switch)                       │
@@ -128,44 +137,44 @@ Tap Caps Lock = Escape    │    Hold Caps Lock = Hyper Modifier
 | `Caps+D` | Page down | |
 | `Caps+F` | Page up | |
 
-### Editing
+### Deletion
 | Key | Action |
 |-----|--------|
-| `Caps+I` | Select all |
-| `Caps+Z` | Undo |
-| `Caps+Shift+Z` | Redo |
-| `Caps+/` | Find |
 | `Caps+M` | Delete char backward |
 | `Caps+N` | Delete word backward |
 | `Caps+,` | Delete char forward |
 | `Caps+.` | Delete word forward |
 
-### Clipboard
-| Key | Action |
-|-----|--------|
-| `Caps+C` | Copy (works in terminals!) |
-| `Caps+V` | Paste (works in terminals!) |
-| `Caps+X` | Cut (works in terminals!) |
-
 ### Window Control
 | Key | Action |
 |-----|--------|
-| `Caps+W` | Close window/tab |
 | `Caps+Q` | Quit application |
 | `Caps+Tab` | Switch windows |
 | `Caps+Shift+Tab` | Switch windows (reverse) |
-| `Caps+[` | Previous tab |
-| `Caps+]` | Next tab |
+
+### Media
+| Key | Action |
+|-----|--------|
+| `Caps+P` | Play / pause |
+| `Caps+Shift+P` | Mute |
+| `Caps+[` | Volume down |
+| `Caps+]` | Volume up |
 
 ### Other
 | Key | Action |
 |-----|--------|
+| `Caps+;` | Enter (home-row) |
 | `Caps+Esc` | Toggle Caps Lock |
 | `Caps+Space` | Language/input switcher |
 | `Caps+Alt+Space` | Emoji/alternate input switcher |
-| `Caps+Enter` | Terminal shortcut (Ctrl/Cmd+Enter) |
 | `Caps+1-0` | App shortcuts (configurable) |
 | `Caps+G/R/T` | App shortcuts (configurable) |
+
+### Deliberately not bound
+Find, undo/redo, select-all, copy/paste/cut, close-tab, and similar are
+app-interpreted commands - they'd behave differently in a terminal than in
+Chrome or Word. Use each program's native shortcut for those; the hyper
+layer only carries keys that mean the same thing everywhere.
 
 ## Customizing
 
@@ -196,19 +205,16 @@ platforms still define the same keys (CI runs this too).
 ## Platform-Specific Notes
 
 ### Linux (keyd)
-- Clipboard operations use `Ctrl+Shift+C/V/X` for terminal compatibility
 - App shortcuts emit `Alt+1-0` and `Alt+G/R/T` - bind these in your window manager to launch apps
 - Window switching uses `Alt+Tab`
 - Quit application uses `Alt+F4`
 
 ### Mac (Karabiner)
-- Clipboard operations use native `Cmd+C/V/X` (works everywhere including terminals!)
 - App shortcuts emit `Ctrl+1-0` and `Ctrl+G/R/T` - works with tools like Raycast/Alfred
 - Window switching uses native `Cmd+Tab`
 - Quit application uses `Cmd+Q`
 
 ### Windows (AutoHotkey)
-- Clipboard operations use native `Ctrl+C/V/X` (standard Windows shortcuts)
 - App shortcuts emit `Ctrl+1-0` and `Ctrl+G/R/T` - bind these in your preferred app launcher
 - Window switching uses `Alt+Tab`
 - Quit application uses `Alt+F4`
@@ -224,7 +230,7 @@ platforms (Karabiner uses a generous 5s window).
 
 This config prioritizes:
 1. **Cross-platform consistency** - Same muscle memory everywhere
-2. **Terminal-friendly** - Clipboard works without conflicts
+2. **App-independent** - Only literal keys and OS-level actions, so nothing changes meaning between programs
 3. **Vim-inspired** - Familiar to vim users, easy for others
 4. **Non-intrusive** - Caps Lock is otherwise unused
 5. **Git-based** - Version controlled, easily synced

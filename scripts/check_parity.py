@@ -25,14 +25,14 @@ KEYD_NON_KEYS = {"fallthrough"}
 # keyd key name -> AutoHotkey hotkey name
 KEYD_TO_AHK = {
     "esc": "esc", "space": "space", "tab": "tab", "enter": "enter",
-    ",": ",", ".": ".", "/": "/", "[": "[", "]": "]",
+    ",": ",", ".": ".", "/": "/", "[": "[", "]": "]", ";": "`;",
 }
 
 # keyd key name -> Karabiner key_code
 KEYD_TO_KARABINER = {
     "esc": "escape", "space": "spacebar", "tab": "tab",
     "enter": "return_or_enter", ",": "comma", ".": "period", "/": "slash",
-    "[": "open_bracket", "]": "close_bracket",
+    "[": "open_bracket", "]": "close_bracket", ";": "semicolon",
 }
 
 
