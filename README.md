@@ -238,7 +238,9 @@ platforms still define the same keys (CI runs this too).
 ## Platform-Specific Notes
 
 ### Linux (keyd)
-- Clipboard emits `Ctrl+Shift+C/V/X` for terminal compatibility (caveat: Chromium-based browsers - Chrome, Chromium, Brave, Edge, Opera - hardwire `Ctrl+Shift+C` to DevTools; Vivaldi alone can rebind it natively. Either use native `Ctrl+C` there, or set up [keyd's per-app mapper](https://github.com/rvaiya/keyd#application-specific-remapping) to rewrite `Ctrl+Shift+C` back to `Ctrl+C` in those browsers - the installer and updater print a copy-pasteable recipe covering the browsers they detect. DevTools inspect stays available via `Ctrl+Shift+I`/`F12`)
+- Clipboard emits `Ctrl+Shift+C/V/X` for terminal compatibility (caveat: Chromium-based browsers - Chrome, Chromium, Brave, Edge, Opera - hardwire `Ctrl+Shift+C` to DevTools; Vivaldi alone can rebind it natively. Either use native `Ctrl+C` there, or set up [keyd's per-app mapper](https://github.com/rvaiya/keyd#application-specific-remapping) - the installer and updater print a copy-pasteable recipe covering the browsers they detect. DevTools inspect stays available via `Ctrl+Shift+I`/`F12`)
+- The per-app recipe binds `hyper.c = C-c`, **not** `C-S-c = C-c`. keyd never re-reads its own output, so a binding without the layer prefix only matches a *physical* `Ctrl+Shift+C` press - never `Caps+C` - and does nothing. The `usermod -aG keyd` step in the recipe also only takes effect at your next login; before that the mapper starts, connects to nothing and silently applies no bindings
+- **COSMIC users:** the per-app mapper does not work at all as of keyd v2.5.0. It binds `zcosmic_toplevel_info_v1` at the version COSMIC advertises (3), where the `toplevel` event it depends on is no longer sent, so it detects no windows (binding version 1 restores the event stream). It can additionally crash while parsing window titles. Both are upstream keyd bugs - until they are fixed, use native `Ctrl+C/V/X` in Chromium-based browsers on COSMIC
 - App shortcuts emit `Alt+1-0` and `Alt+G/R/T` - bind these in your window manager to launch apps
 - Window switching uses `Alt+Tab`
 - Quit application uses `Alt+F4`

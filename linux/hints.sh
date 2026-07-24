@@ -59,13 +59,23 @@ print_chrome_copy_hint() {
     echo "DevTools inspect stays available via Ctrl+Shift+I or F12."
     echo "Works on: X11; wlroots Wayland; GNOME Wayland (needs keyd's"
     echo "bundled shell extension - see the keyd README); KDE."
-    echo ""
-    echo "On COSMIC it silently does nothing as of keyd v2.5.0: the mapper"
-    echo "binds zcosmic_toplevel_info_v1 at the advertised version (3),"
-    echo "where the 'toplevel' event it relies on is no longer sent, so it"
-    echo "never sees a window. Binding version 1 restores the events. It"
-    echo "can also crash parsing window titles - if bindings stop applying,"
-    echo "check ~/.config/keyd/app.log. Both are upstream keyd bugs."
+
+    # COSMIC ships a zcosmic_toplevel_info_v1 version that keyd's mapper
+    # cannot drive, so the recipe above is a silent no-op there. Detect the
+    # compositor by process - this runs under sudo, where the desktop env
+    # vars are not available.
+    if pgrep -x cosmic-comp > /dev/null 2>&1; then
+        echo ""
+        echo "!! On COSMIC (this machine) the above currently does nothing."
+        echo "   keyd's mapper binds zcosmic_toplevel_info_v1 at the version"
+        echo "   COSMIC advertises (3), where the 'toplevel' event it relies"
+        echo "   on is no longer sent - so it reports 'cosmic detected' and"
+        echo "   then never sees a window. Binding version 1 restores the"
+        echo "   full event stream. It can also crash parsing window titles."
+        echo "   Both are upstream keyd bugs (present in v2.5.0); until they"
+        echo "   are fixed, use native Ctrl+C/V/X in your browser."
+        echo "   If bindings stop applying, check ~/.config/keyd/app.log."
+    fi
     echo "Verify window class names with: keyd-application-mapper -v"
     echo "─────────────────────────────────────────────────────────────────────"
 }
