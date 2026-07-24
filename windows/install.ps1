@@ -1,12 +1,23 @@
 # SuperKeys Windows Installer
-# IMPORTANT: This script requires either:
-# 1. Windows Developer Mode enabled, OR
-# 2. Running PowerShell as Administrator
+# Prefers a symlink (requires Developer Mode or Administrator); falls back to
+# a small loader file that needs no special privileges.
 
 param(
     [switch]$Uninstall,
     [switch]$NoAutostart
 )
+
+# ============================================
+# Helpers
+# ============================================
+# Stop only AutoHotkey processes running our keymap - never other AHK scripts
+function Stop-SuperKeysProcess {
+    Get-CimInstance Win32_Process -Filter "Name LIKE 'AutoHotkey%'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -like "*keymap.ahk*" } |
+        ForEach-Object {
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+        }
+}
 
 # ============================================
 # Find AutoHotkey Installation
@@ -42,15 +53,28 @@ function Find-AutoHotkey {
 
 $AhkExe = Find-AutoHotkey
 
-if (-not $AhkExe) {
-    Write-Host "Error: AutoHotkey v2 is not installed." -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Please install AutoHotkey v2 from: https://www.autohotkey.com/" -ForegroundColor Yellow
-    Write-Host "Download the installer and select 'v2' during installation."
-    exit 1
+if (-not $AhkExe -and -not $Uninstall) {
+    Write-Host "AutoHotkey v2 is not installed." -ForegroundColor Yellow
+    $winget = Get-Command "winget" -ErrorAction SilentlyContinue
+    if ($winget) {
+        $response = Read-Host "Install it now via winget? [Y/n]"
+        if ($response -eq "" -or $response -match "^[Yy]") {
+            winget install -e --id AutoHotkey.AutoHotkey
+            $AhkExe = Find-AutoHotkey
+        }
+    }
+    if (-not $AhkExe) {
+        Write-Host "Error: AutoHotkey v2 is not installed." -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Please install AutoHotkey v2 from: https://www.autohotkey.com/" -ForegroundColor Yellow
+        Write-Host "Download the installer and select 'v2' during installation."
+        exit 1
+    }
 }
 
-Write-Host "Found AutoHotkey: $AhkExe" -ForegroundColor Gray
+if ($AhkExe) {
+    Write-Host "Found AutoHotkey: $AhkExe" -ForegroundColor Gray
+}
 
 # ============================================
 # Path Configuration
@@ -73,16 +97,14 @@ if ($Uninstall) {
         Write-Host "✓ Removed autostart shortcut" -ForegroundColor Green
     }
 
-    # Remove symlink
+    # Remove symlink (or loader file)
     if (Test-Path $TargetFile) {
         Remove-Item $TargetFile -Force
-        Write-Host "✓ Removed config symlink" -ForegroundColor Green
+        Write-Host "✓ Removed config link" -ForegroundColor Green
     }
 
-    # Kill running instance
-    Get-Process | Where-Object { $_.MainWindowTitle -like "*SuperKeys*" -or $_.ProcessName -eq "AutoHotkey64" -or $_.ProcessName -eq "AutoHotkey" } | ForEach-Object {
-        $_.CloseMainWindow() | Out-Null
-    }
+    # Kill running instance (only ours - other AHK scripts are left alone)
+    Stop-SuperKeysProcess
 
     Write-Host ""
     Write-Host "SuperKeys has been uninstalled." -ForegroundColor Green
@@ -101,6 +123,7 @@ if (-not (Test-Path $TargetDir)) {
 # Install: Create Symlink
 # ============================================
 $NeedSymlink = $true
+$LoaderSignature = "; SuperKeys loader"
 
 if (Test-Path $TargetFile) {
     $item = Get-Item $TargetFile
@@ -112,6 +135,15 @@ if (Test-Path $TargetFile) {
             $NeedSymlink = $false
         } else {
             Write-Host "Removing old symlink pointing to: $currentTarget" -ForegroundColor Yellow
+            Remove-Item $TargetFile -Force
+        }
+    } elseif ((Get-Content $TargetFile -First 1 -ErrorAction SilentlyContinue) -eq $LoaderSignature) {
+        # It's a loader file from a previous install
+        if (Select-String -Path $TargetFile -Pattern ([regex]::Escape($RepoConfig)) -Quiet) {
+            Write-Host "✓ Config loader already exists" -ForegroundColor Green
+            $NeedSymlink = $false
+        } else {
+            Write-Host "Removing loader pointing to a different location" -ForegroundColor Yellow
             Remove-Item $TargetFile -Force
         }
     } else {
@@ -128,14 +160,18 @@ if ($NeedSymlink) {
         New-Item -ItemType SymbolicLink -Path $TargetFile -Target $RepoConfig -ErrorAction Stop | Out-Null
         Write-Host "✓ Symlink created successfully" -ForegroundColor Green
     } catch {
-        Write-Host "Error: Failed to create symlink" -ForegroundColor Red
-        Write-Host ""
-        Write-Host "This script requires either:" -ForegroundColor Yellow
-        Write-Host "  1. Windows Developer Mode enabled"
-        Write-Host "     Settings > System > For developers > Developer Mode"
-        Write-Host ""
-        Write-Host "  2. OR run PowerShell as Administrator"
-        exit 1
+        # No Developer Mode / not elevated: fall back to a loader file, which
+        # is a regular file and needs no special privileges. It #Includes the
+        # repo config, so edits there still apply on reload.
+        Write-Host "Symlink not permitted; using a loader file instead (no admin needed)" -ForegroundColor Yellow
+        $loader = @(
+            $LoaderSignature
+            "; Auto-generated - do not edit. The real config lives in the repo:"
+            "#Requires AutoHotkey v2.0"
+            "#Include `"$RepoConfig`""
+        ) -join "`r`n"
+        Set-Content -Path $TargetFile -Value $loader -Encoding UTF8
+        Write-Host "✓ Loader created: $TargetFile -> $RepoConfig" -ForegroundColor Green
     }
 }
 
@@ -180,13 +216,8 @@ if ($SetupAutostart) {
 Write-Host ""
 $launch = Read-Host "Would you like to start SuperKeys now? [Y/n]"
 if ($launch -eq "" -or $launch -match "^[Yy]") {
-    # Kill any existing instance first
-    Get-Process | Where-Object { $_.ProcessName -match "AutoHotkey" } | ForEach-Object {
-        try {
-            $_.CloseMainWindow() | Out-Null
-            Start-Sleep -Milliseconds 500
-        } catch {}
-    }
+    # Kill any existing SuperKeys instance first (other AHK scripts untouched)
+    Stop-SuperKeysProcess
 
     Start-Process -FilePath $AhkExe -ArgumentList "`"$TargetFile`""
     Write-Host "✓ SuperKeys is now running" -ForegroundColor Green

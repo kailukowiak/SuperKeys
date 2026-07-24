@@ -11,17 +11,25 @@ SuperKeys is a cross-platform keyboard remapping utility that transforms Caps Lo
 ```
 SuperKeys/
 ├── install              # Cross-platform installer (bash, auto-detects OS)
+├── update               # Cross-platform updater: git pull + re-apply + reload
 ├── README.md            # User documentation with keyboard layout diagrams
 ├── LICENSE              # MIT License
+├── scripts/
+│   └── check_parity.py  # Verifies all 3 configs define the same hyper keys
+├── .github/workflows/
+│   └── ci.yml           # JSON validation, parity check, shellcheck, PSScriptAnalyzer
 ├── linux/
 │   ├── default.conf     # keyd configuration file
-│   └── install.sh       # Linux installer (requires sudo)
+│   ├── install.sh       # Linux installer (requires sudo)
+│   └── uninstall.sh     # Removes symlink, restores backup, restarts keyd
 ├── mac/
 │   ├── karabiner.json   # Karabiner-Elements rules
-│   └── install.sh       # macOS installer
+│   ├── install.sh       # macOS installer (merges SuperKeys profile)
+│   └── uninstall.sh     # Removes only the SuperKeys profile
 └── windows/
     ├── keymap.ahk       # AutoHotkey v2 script
-    └── install.ps1      # Windows PowerShell installer
+    ├── install.ps1      # Windows PowerShell installer
+    └── update.ps1       # git pull + restart the running keymap
 ```
 
 ## Platform-Specific Technologies
@@ -49,8 +57,8 @@ SuperKeys/
 ### Windows: `windows/keymap.ahk`
 - AutoHotkey v2 syntax (requires `#Requires AutoHotkey v2.0`)
 - Uses `#HotIf GetKeyState("CapsLock", "P")` for context-sensitive hotkeys (instant response)
-- Tap detection: tracks press time + modifier flag; Escape sent only if < 200ms and no other key pressed
-- Shift variants defined explicitly (e.g., `+h::` for Shift+H while CapsLock held)
+- Tap detection: `A_PriorKey = "CapsLock"` at release means no other key was pressed while held → send Escape. No time limit, matching keyd's `overload()`
+- Navigation keys use `*key:: Send "{Blind}..."` so held modifiers fall through (Shift selects, Ctrl jumps words), matching keyd's `fallthrough = true`; keys with distinct shift behavior (e.g. `+z::` redo) are defined explicitly
 
 **Why `#HotIf` instead of `CapsLock & key`:**
 The custom combination syntax (`CapsLock & key::`) makes CapsLock a "prefix key" - AHK waits to see if another key follows, causing input lag. The `#HotIf` approach checks physical key state instantly, matching keyd/Karabiner behavior.
@@ -87,16 +95,15 @@ To add a new hyper shortcut across all platforms:
 3. **Windows** (`windows/keymap.ahk`):
    Add inside the `#HotIf GetKeyState("CapsLock", "P")` block:
    ```autohotkey
-   newkey:: {
-       MarkUsed()
-       Send "{target_key}"  ; or "^{key}" for Ctrl+key
-   }
-   ; If shift variant needed:
-   +newkey:: {
-       MarkUsed()
-       Send "+{target_key}"
-   }
+   newkey:: Send "{target_key}"  ; or "^{key}" for Ctrl+key
+   ; If Shift should fall through (selection variants), use wildcard + Blind:
+   *newkey:: Send "{Blind}{target_key}"
+   ; If the shift variant does something different, define it explicitly:
+   +newkey:: Send "+{other_key}"
    ```
+
+4. Run `python3 scripts/check_parity.py` - it fails if any platform is
+   missing the new key (CI enforces this on every PR).
 
 ### Modifier Key Mapping
 
@@ -109,22 +116,25 @@ To add a new hyper shortcut across all platforms:
 
 ### Testing Changes
 
-- **Linux**: Changes apply after `sudo systemctl restart keyd`
-- **macOS**: Karabiner-Elements auto-detects config changes
+- **Linux**: Changes apply after `sudo systemctl restart keyd` (validate first with `sudo keyd check`)
+- **macOS**: Re-run `./mac/install.sh` (or `./update`) to re-merge the profile; Karabiner then auto-detects the change
 - **Windows**: Reload script by right-clicking tray icon → "Reload Script"
+- **All platforms**: `./update` (or `windows\update.ps1`) pulls and re-applies in one step
 
 ## Installation Architecture
 
 All installers follow the same pattern:
-1. Check if required software is installed
-2. Check for existing config (don't overwrite without explicit backup)
-3. Create symlink from system config location → repo config file
-4. Restart/notify the remapping service
+1. Check if required software is installed (offering to install it via the platform's package manager)
+2. Back up any existing config before touching it
+3. Link the repo config into place:
+   - Linux/Windows: symlink from system config location → repo config file
+   - Windows without Developer Mode/admin: a loader file that `#Include`s the repo config
+   - macOS: merge the SuperKeys profile into the user's `karabiner.json` (Karabiner rewrites its config, so a symlink is not possible)
+4. Validate (Linux `keyd check`) and restart/notify the remapping service
 
-This symlink approach ensures:
-- Config changes sync via git pull
-- Single source of truth in the repository
-- Easy rollback by removing symlink
+Because macOS is a merge, a plain `git pull` is not enough there - the `update`
+script (and `windows/update.ps1`) does pull + re-apply + reload on every
+platform, and is the documented way to sync machines.
 
 ### Windows Installer Options
 
@@ -144,7 +154,7 @@ The installer:
 ## Common Tasks
 
 ### Updating the Keyboard Layout Diagram
-The ASCII diagram in `README.md` (lines 74-96) should be updated when adding visible shortcuts.
+The ASCII diagram in `README.md` (under "Keyboard Layout") should be updated when adding visible shortcuts.
 
 ### Platform Parity
 When modifying shortcuts, ensure all three platforms behave consistently:
@@ -178,7 +188,7 @@ Note the intentional differences for terminal compatibility:
 ### Windows-Specific Issues
 
 **Tap-for-Escape not working reliably:**
-- Adjust `TapTimeout` in `keymap.ahk` (default: 200ms). Lower = faster tap required, higher = more forgiving
+- Tap detection relies on `A_PriorKey`, which needs AHK's key history enabled (it is by default; don't set `#KeyHistory 0`)
 - Ensure no other AHK scripts are intercepting CapsLock
 
 **Keys not responding while CapsLock held:**

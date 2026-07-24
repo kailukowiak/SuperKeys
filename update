@@ -1,0 +1,45 @@
+#!/bin/bash
+# SuperKeys updater
+# Pulls the latest configs and re-applies them - a plain `git pull` is not
+# enough: macOS needs the profile re-merged into karabiner.json, and Linux
+# needs the keyd config validated and reloaded.
+
+set -e
+cd "$(dirname "$0")" || exit 1
+
+echo "Pulling latest changes..."
+git pull --ff-only
+
+case "$(uname -s)" in
+    Linux*)
+        if ! command -v keyd &> /dev/null; then
+            echo "keyd is not installed - run ./install first."
+            exit 1
+        fi
+        # Validate before reloading so a bad config can't take the keyboard down
+        if keyd --help 2>&1 | grep -q '\bcheck\b'; then
+            if ! sudo keyd check; then
+                echo "Error: keyd rejected the config. Fix the errors above and re-run."
+                exit 1
+            fi
+            echo "✓ Config validated"
+        fi
+        if keyd --help 2>&1 | grep -q '\breload\b' && systemctl is-active --quiet keyd; then
+            sudo keyd reload
+        else
+            sudo systemctl restart keyd
+        fi
+        echo "✓ keyd reloaded - new config is active"
+        ;;
+    Darwin*)
+        # Re-merge the SuperKeys profile into karabiner.json; Karabiner
+        # auto-detects the change, no restart needed
+        ./mac/install.sh
+        echo "✓ Profile re-merged - Karabiner picks it up automatically"
+        ;;
+    *)
+        echo "On Windows, run the updater from PowerShell instead:"
+        echo "  .\\windows\\update.ps1"
+        exit 1
+        ;;
+esac
