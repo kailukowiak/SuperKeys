@@ -2,6 +2,13 @@
 ; Caps Lock as Hyper key with vim-style navigation
 ; AutoHotkey v2.0
 ;
+; Design principle: every binding here must send literal cursor/media keys or
+; resolve at the OS level, so it behaves identically in every app. Commands
+; that apps interpret themselves (find, undo, close-tab, ...) are
+; deliberately NOT bound - use each program's native shortcut for those.
+; Sole exception: the clipboard keys, which earn their spot by working in
+; terminals too.
+;
 ; CapsLock: tap for Escape, hold for Hyper key
 ; This implementation uses #HotIf for instant response (no prefix key delay)
 
@@ -10,42 +17,21 @@
 SendMode "Input"
 SetWorkingDir A_ScriptDir
 
-; ============================================
-; Configuration
-; ============================================
-global TapTimeout := 200  ; ms - max time for a "tap" to register as Escape
-
-; ============================================
-; State Tracking
-; ============================================
-global CapsDownTime := 0
-global CapsUsedAsModifier := false
-
 ; Disable CapsLock LED/toggle state
 SetCapsLockState "AlwaysOff"
 
 ; ============================================
 ; CapsLock Press/Release Handling
 ; ============================================
-; On CapsLock down: record time, reset modifier flag
+; Matches keyd's overload() semantics: Escape fires on release only if no
+; other key was pressed while CapsLock was held - no time limit. A_PriorKey
+; still equals "CapsLock" at release time iff nothing else was pressed.
 *CapsLock:: {
-    global CapsDownTime, CapsUsedAsModifier
-    CapsDownTime := A_TickCount
-    CapsUsedAsModifier := false
 }
 
-; On CapsLock up: send Escape if it was a quick tap with no other keys
 *CapsLock up:: {
-    global CapsDownTime, CapsUsedAsModifier, TapTimeout
-    elapsed := A_TickCount - CapsDownTime
-    if (!CapsUsedAsModifier && elapsed < TapTimeout) {
+    if (A_PriorKey = "CapsLock")
         Send "{Escape}"
-    }
-}
-
-; Helper: mark that CapsLock was used as a modifier
-MarkUsed() {
-    global CapsUsedAsModifier := true
 }
 
 ; ============================================
@@ -55,206 +41,67 @@ MarkUsed() {
 
 ; --- Toggle real CapsLock ---
 Esc:: {
-    MarkUsed()
     SetCapsLockState !GetKeyState("CapsLock", "T")
 }
 
 ; --- Vim Navigation (HJKL) ---
-h:: {
-    MarkUsed()
-    Send "{Left}"
-}
-+h:: {  ; Shift+H while CapsLock held = select left
-    MarkUsed()
-    Send "+{Left}"
-}
+; {Blind} lets held modifiers fall through: Shift selects, Ctrl jumps words,
+; matching keyd's `fallthrough = true`.
+*h:: Send "{Blind}{Left}"
+*j:: Send "{Blind}{Down}"
+*k:: Send "{Blind}{Up}"
+*l:: Send "{Blind}{Right}"
 
-j:: {
-    MarkUsed()
-    Send "{Down}"
-}
-+j:: {
-    MarkUsed()
-    Send "+{Down}"
-}
+; --- Word/Line/Page Navigation (Shift falls through for selection) ---
+*a:: Send "{Blind}^{Left}"   ; Word left
+*e:: Send "{Blind}^{Right}"  ; Word right
+*u:: Send "{Blind}{Home}"    ; Line start
+*o:: Send "{Blind}{End}"     ; Line end
+*d:: Send "{Blind}{PgDn}"    ; Page down
+*f:: Send "{Blind}{PgUp}"    ; Page up
 
-k:: {
-    MarkUsed()
-    Send "{Up}"
-}
-+k:: {
-    MarkUsed()
-    Send "+{Up}"
-}
-
-l:: {
-    MarkUsed()
-    Send "{Right}"
-}
-+l:: {
-    MarkUsed()
-    Send "+{Right}"
-}
-
-; --- Word/Line/Page Navigation ---
-a:: {
-    MarkUsed()
-    Send "^{Left}"  ; Word left
-}
-+a:: {
-    MarkUsed()
-    Send "^+{Left}"  ; Select word left
-}
-
-e:: {
-    MarkUsed()
-    Send "^{Right}"  ; Word right
-}
-+e:: {
-    MarkUsed()
-    Send "^+{Right}"  ; Select word right
-}
-
-u:: {
-    MarkUsed()
-    Send "{Home}"  ; Line start
-}
-+u:: {
-    MarkUsed()
-    Send "+{Home}"  ; Select to line start
-}
-
-o:: {
-    MarkUsed()
-    Send "{End}"  ; Line end
-}
-+o:: {
-    MarkUsed()
-    Send "+{End}"  ; Select to line end
-}
-
-i:: {
-    MarkUsed()
-    Send "{End}"  ; Line end (alternate)
-}
-+i:: {
-    MarkUsed()
-    Send "+{End}"  ; Select to line end
-}
-
-d:: {
-    MarkUsed()
-    Send "{PgDn}"  ; Page down
-}
-
-f:: {
-    MarkUsed()
-    Send "{PgUp}"  ; Page up
-}
+; --- Home-Row Enter (literal key, universal) ---
+`;:: Send "{Enter}"
 
 ; --- Deletion ---
-n:: {
-    MarkUsed()
-    Send "^{Backspace}"  ; Delete word backward
-}
+n:: Send "^{Backspace}"  ; Delete word backward
+m:: Send "{Backspace}"   ; Delete char backward
+,:: Send "{Delete}"      ; Delete char forward
+.:: Send "^{Delete}"     ; Delete word forward
 
-m:: {
-    MarkUsed()
-    Send "{Backspace}"  ; Delete char backward
-}
+; --- Clipboard (deliberate exception to the app-independence rule) ---
+c:: Send "^c"  ; Copy
+v:: Send "^v"  ; Paste
+x:: Send "^x"  ; Cut
 
-,:: {
-    MarkUsed()
-    Send "{Delete}"  ; Delete char forward
-}
+; --- Window Control (OS-level, app-independent) ---
+q:: Send "!{F4}"  ; Quit application
+Tab:: Send "!{Tab}"    ; Switch windows
++Tab:: Send "+!{Tab}"  ; Switch windows (reverse)
 
-.:: {
-    MarkUsed()
-    Send "^{Delete}"  ; Delete word forward
-}
+; --- Media Controls (OS-level, app-independent) ---
+p:: Send "{Media_Play_Pause}"
++p:: Send "{Volume_Mute}"
+[:: Send "{Volume_Down}"
+]:: Send "{Volume_Up}"
 
-; --- Clipboard ---
-c:: {
-    MarkUsed()
-    Send "^c"  ; Copy
-}
-
-v:: {
-    MarkUsed()
-    Send "^v"  ; Paste
-}
-
-x:: {
-    MarkUsed()
-    Send "^x"  ; Cut
-}
-
-; --- Window Control ---
-w:: {
-    MarkUsed()
-    Send "^w"  ; Close tab/window
-}
-
-q:: {
-    MarkUsed()
-    Send "!{F4}"  ; Quit application
-}
-
-Tab:: {
-    MarkUsed()
-    Send "!{Tab}"  ; Switch windows
-}
-+Tab:: {
-    MarkUsed()
-    Send "+!{Tab}"  ; Switch windows (reverse)
-}
-
-; --- App Shortcuts (Ctrl+Number) ---
-1:: {
-    MarkUsed()
-    Send "^1"
-}
-2:: {
-    MarkUsed()
-    Send "^2"
-}
-3:: {
-    MarkUsed()
-    Send "^3"
-}
-4:: {
-    MarkUsed()
-    Send "^4"
-}
-5:: {
-    MarkUsed()
-    Send "^5"
-}
-6:: {
-    MarkUsed()
-    Send "^6"
-}
-7:: {
-    MarkUsed()
-    Send "^7"
-}
-8:: {
-    MarkUsed()
-    Send "^8"
-}
-9:: {
-    MarkUsed()
-    Send "^9"
-}
-0:: {
-    MarkUsed()
-    Send "^0"
-}
+; --- App Shortcuts (Ctrl+Number, Ctrl+G/R/T) ---
+1:: Send "^1"
+2:: Send "^2"
+3:: Send "^3"
+4:: Send "^4"
+5:: Send "^5"
+6:: Send "^6"
+7:: Send "^7"
+8:: Send "^8"
+9:: Send "^9"
+0:: Send "^0"
+g:: Send "^g"
+r:: Send "^r"
+t:: Send "^t"
 
 ; --- Language/Input Switcher ---
-Space:: {
-    MarkUsed()
-    Send "^{Space}"
-}
+Space:: Send "^{Space}"
+!Space:: Send "^!{Space}"
 
 #HotIf  ; End CapsLock context

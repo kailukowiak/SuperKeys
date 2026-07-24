@@ -6,15 +6,46 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-# Check if keyd is installed
+# Check if keyd is installed; offer to install it from the distro's packages
 if ! command -v keyd &> /dev/null; then
-    echo "Error: 'keyd' is not installed or not in your PATH."
-    echo "Please install keyd first: https://github.com/rvaiya/keyd"
-    echo "Installation summary:"
-    echo "  git clone https://github.com/rvaiya/keyd"
-    echo "  cd keyd && make && sudo make install"
-    echo "  sudo systemctl enable keyd && sudo systemctl start keyd"
-    exit 1
+    echo "'keyd' is not installed or not in your PATH."
+
+    PKG_CMD=()
+    if command -v apt-get &> /dev/null; then
+        PKG_CMD=(apt-get install -y keyd)
+    elif command -v dnf &> /dev/null; then
+        PKG_CMD=(dnf install -y keyd)
+    elif command -v pacman &> /dev/null; then
+        PKG_CMD=(pacman -S --noconfirm keyd)
+    elif command -v zypper &> /dev/null; then
+        PKG_CMD=(zypper install -y keyd)
+    fi
+
+    if [ ${#PKG_CMD[@]} -gt 0 ]; then
+        read -r -p "Install keyd now via '${PKG_CMD[*]}'? [Y/n] " response
+        if [ -z "$response" ] || [[ "$response" =~ ^[Yy] ]]; then
+            if "${PKG_CMD[@]}" && command -v keyd &> /dev/null; then
+                systemctl enable keyd
+                echo "✓ keyd installed"
+            else
+                echo "Package install failed (keyd may not be in your distro's repos)."
+                echo "Build it from source instead:"
+                echo "  git clone https://github.com/rvaiya/keyd"
+                echo "  cd keyd && make && sudo make install"
+                echo "  sudo systemctl enable keyd && sudo systemctl start keyd"
+                exit 1
+            fi
+        else
+            exit 1
+        fi
+    else
+        echo "Please install keyd first: https://github.com/rvaiya/keyd"
+        echo "Installation summary:"
+        echo "  git clone https://github.com/rvaiya/keyd"
+        echo "  cd keyd && make && sudo make install"
+        echo "  sudo systemctl enable keyd && sudo systemctl start keyd"
+        exit 1
+    fi
 fi
 
 # Get the absolute path of the config file inside the repo
@@ -71,6 +102,16 @@ if [ "$SYMLINK_ALREADY_EXISTS" = false ]; then
     fi
 
     echo "✓ Symlink created successfully"
+fi
+
+# Validate the config before restarting, so a typo can't take the keyboard
+# down ('keyd check' exists in recent keyd versions)
+if keyd --help 2>&1 | grep -q '\bcheck\b'; then
+    if ! keyd check; then
+        echo "Error: keyd rejected the config. Fix the errors above and re-run."
+        exit 1
+    fi
+    echo "✓ Config validated"
 fi
 
 # Restart keyd to apply changes

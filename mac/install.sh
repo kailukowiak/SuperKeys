@@ -7,12 +7,24 @@ set -e
 
 # Check if Karabiner-Elements is installed
 if [ ! -d "/Applications/Karabiner-Elements.app" ]; then
-    echo "Error: Karabiner-Elements is not installed in /Applications."
-    echo ""
-    echo "Install it using one of these methods:"
-    echo "  brew install --cask karabiner-elements"
-    echo "  or download from: https://karabiner-elements.pqrs.org/"
-    exit 1
+    echo "Karabiner-Elements is not installed in /Applications."
+    if command -v brew &> /dev/null; then
+        read -r -p "Install it now with Homebrew? [Y/n] " response
+        if [ -z "$response" ] || [[ "$response" =~ ^[Yy] ]]; then
+            brew install --cask karabiner-elements
+        else
+            echo "Install it manually and re-run this script:"
+            echo "  brew install --cask karabiner-elements"
+            echo "  or download from: https://karabiner-elements.pqrs.org/"
+            exit 1
+        fi
+    else
+        echo ""
+        echo "Install it using one of these methods:"
+        echo "  brew install --cask karabiner-elements"
+        echo "  or download from: https://karabiner-elements.pqrs.org/"
+        exit 1
+    fi
 fi
 
 # Paths
@@ -25,6 +37,13 @@ TARGET_PATH="$TARGET_DIR/karabiner.json"
 if [ ! -d "$TARGET_DIR" ]; then
     echo "Creating directory $TARGET_DIR"
     mkdir -p "$TARGET_DIR"
+fi
+
+# Back up the existing config before touching it (README promises this,
+# and it protects against the invalid-JSON replacement path below)
+if [ -f "$TARGET_PATH" ]; then
+    cp "$TARGET_PATH" "$TARGET_PATH.bak"
+    echo "Backed up existing config to $TARGET_PATH.bak"
 fi
 
 # Use Python to merge configs (available on all modern Macs)
