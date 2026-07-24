@@ -16,6 +16,7 @@ Transforms Caps Lock into a powerful "Hyper" modifier key with vim-style navigat
 - **Text Selection**: Add Shift for selecting while navigating
 - **Word/Line Navigation**: Quick movement with `A/E/U/O`
 - **Smart Deletion**: Multiple delete modes with `N/M/,/.`
+- **Clipboard**: `Caps+C/V/X` for copy/paste/cut (works in terminals!)
 - **Home-Row Enter**: `Caps+;` for Enter without leaving home position
 - **Media Controls**: `Caps+P/[/]` for play-pause and volume
 - **Window Switching**: `Caps+Tab` / `Caps+Q`
@@ -25,10 +26,15 @@ Transforms Caps Lock into a powerful "Hyper" modifier key with vim-style navigat
 binding either sends literal keys (arrows, Home/End, PageUp/Down, Enter,
 Backspace/Delete) or resolves at the OS level (window switching, media,
 input switching). Shortcuts that apps interpret themselves - find, undo,
-copy/paste, close-tab - are deliberately *not* bound, because they mean
-different things in different programs (`Ctrl+F` is find in Chrome but
+close-tab - are deliberately *not* bound, because they mean different
+things in different programs (`Ctrl+F` is find in Chrome but
 cursor-forward in a shell). For those, use each program's native shortcut;
 your muscle memory for them already works.
+
+The one deliberate exception is the clipboard (`Caps+C/V/X`): it works in
+nearly every app *including terminals*, which native `Ctrl+C` can't do.
+The rare misfires (e.g. on Linux `Ctrl+Shift+C` opens DevTools in Chrome)
+are a price worth paying - just use the native shortcut there.
 
 Your configs stay in this git repo. Install scripts create symlinks so changes sync across machines.
 
@@ -114,7 +120,7 @@ cd windows
 │  [HYPER]   │Word←│     │ PgDn│ PgUp│ App │  ←  │  ↓  │  ↑  │  →  │Enter│         │
 │ CAPS LOCK  │  A  │  S  │  D  │  F  │  G  │  H  │  J  │  K  │  L  │  ;  │         │
 ├────────────┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──────┤
-│               │     │     │     │     │     │ Del │ Del │ Del │ Del │     │      │
+│               │     │ Cut │ Copy│Paste│     │ Del │ Del │ Del │ Del │     │      │
 │               │  Z  │  X  │  C  │  V  │  B  │  N  │  M  │  ,  │  .  │  /  │      │
 ├───────────────┼─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴──────┤
 │               │                      Space  (Input Switch)                       │
@@ -145,6 +151,13 @@ Tap Caps Lock = Escape    │    Hold Caps Lock = Hyper Modifier
 | `Caps+,` | Delete char forward |
 | `Caps+.` | Delete word forward |
 
+### Clipboard
+| Key | Action |
+|-----|--------|
+| `Caps+C` | Copy (works in terminals!) |
+| `Caps+V` | Paste (works in terminals!) |
+| `Caps+X` | Cut (works in terminals!) |
+
 ### Window Control
 | Key | Action |
 |-----|--------|
@@ -171,10 +184,11 @@ Tap Caps Lock = Escape    │    Hold Caps Lock = Hyper Modifier
 | `Caps+G/R/T` | App shortcuts (configurable) |
 
 ### Deliberately not bound
-Find, undo/redo, select-all, copy/paste/cut, close-tab, and similar are
-app-interpreted commands - they'd behave differently in a terminal than in
-Chrome or Word. Use each program's native shortcut for those; the hyper
-layer only carries keys that mean the same thing everywhere.
+Find, undo/redo, select-all, close-tab, and similar are app-interpreted
+commands - they'd behave differently in a terminal than in Chrome or Word.
+Use each program's native shortcut for those; apart from the clipboard
+exception above, the hyper layer only carries keys that mean the same
+thing everywhere.
 
 ## Customizing
 
@@ -205,16 +219,19 @@ platforms still define the same keys (CI runs this too).
 ## Platform-Specific Notes
 
 ### Linux (keyd)
+- Clipboard emits `Ctrl+Shift+C/V/X` for terminal compatibility (caveat: `Ctrl+Shift+C` is DevTools in Chrome - use native `Ctrl+C` there)
 - App shortcuts emit `Alt+1-0` and `Alt+G/R/T` - bind these in your window manager to launch apps
 - Window switching uses `Alt+Tab`
 - Quit application uses `Alt+F4`
 
 ### Mac (Karabiner)
+- Clipboard emits native `Cmd+C/V/X` (works everywhere including terminals)
 - App shortcuts emit `Ctrl+1-0` and `Ctrl+G/R/T` - works with tools like Raycast/Alfred
 - Window switching uses native `Cmd+Tab`
 - Quit application uses `Cmd+Q`
 
 ### Windows (AutoHotkey)
+- Clipboard emits `Ctrl+C/V/X` (in most terminals `Ctrl+C` still copies when text is selected)
 - App shortcuts emit `Ctrl+1-0` and `Ctrl+G/R/T` - bind these in your preferred app launcher
 - Window switching uses `Alt+Tab`
 - Quit application uses `Alt+F4`

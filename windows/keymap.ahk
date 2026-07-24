@@ -4,8 +4,10 @@
 ;
 ; Design principle: every binding here must send literal cursor/media keys or
 ; resolve at the OS level, so it behaves identically in every app. Commands
-; that apps interpret themselves (find, undo, copy, close-tab, ...) are
+; that apps interpret themselves (find, undo, close-tab, ...) are
 ; deliberately NOT bound - use each program's native shortcut for those.
+; Sole exception: the clipboard keys, which earn their spot by working in
+; terminals too.
 ;
 ; CapsLock: tap for Escape, hold for Hyper key
 ; This implementation uses #HotIf for instant response (no prefix key delay)
@@ -66,6 +68,11 @@ n:: Send "^{Backspace}"  ; Delete word backward
 m:: Send "{Backspace}"   ; Delete char backward
 ,:: Send "{Delete}"      ; Delete char forward
 .:: Send "^{Delete}"     ; Delete word forward
+
+; --- Clipboard (deliberate exception to the app-independence rule) ---
+c:: Send "^c"  ; Copy
+v:: Send "^v"  ; Paste
+x:: Send "^x"  ; Cut
 
 ; --- Window Control (OS-level, app-independent) ---
 q:: Send "!{F4}"  ; Quit application

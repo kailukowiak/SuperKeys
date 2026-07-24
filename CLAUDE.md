@@ -166,10 +166,16 @@ When modifying shortcuts, ensure all three platforms behave consistently:
 Every hyper binding must send literal keys (arrows, Home/End, PageUp/Down,
 Enter, Backspace/Delete) or resolve at the OS level (window switching, media
 keys, input switching). Do NOT add app-interpreted commands (find, undo,
-copy/paste, close-tab, select-all) - they behave differently per program
-(e.g. `Ctrl+F` is find in Chrome but cursor-forward in a shell), which
-defeats the muscle-memory goal. Those were deliberately removed; users fall
-back to each program's native shortcut.
+close-tab, select-all) - they behave differently per program (e.g. `Ctrl+F`
+is find in Chrome but cursor-forward in a shell), which defeats the
+muscle-memory goal. Those were deliberately removed; users fall back to each
+program's native shortcut.
+
+The one sanctioned exception is the clipboard (`Caps+C/V/X`): it works in
+nearly every app including terminals, so its value outweighs its few
+misfires (on Linux it emits `Ctrl+Shift+C/V/X` for terminal compatibility,
+which is DevTools in Chrome; macOS/Windows use native `Cmd`/`Ctrl+C/V/X`).
+Do not add further exceptions without the user asking.
 
 ## Code Style Conventions
 
