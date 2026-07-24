@@ -30,6 +30,10 @@ case "$(uname -s)" in
             sudo systemctl restart keyd
         fi
         echo "✓ keyd reloaded - new config is active"
+
+        # shellcheck source=linux/hints.sh
+        . ./linux/hints.sh
+        print_chrome_copy_hint
         ;;
     Darwin*)
         # Re-merge the SuperKeys profile into karabiner.json; Karabiner
