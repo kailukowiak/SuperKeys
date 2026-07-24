@@ -17,21 +17,37 @@ if ! command -v git &> /dev/null; then
     exit 1
 fi
 
-# When piped from curl, stdin is the script itself - reattach the terminal so
-# the installer's prompts (and sudo) work. Skipped when no terminal exists.
-if [ ! -t 0 ] && (exec < /dev/tty) 2> /dev/null; then
-    exec < /dev/tty
+# When piped from curl, this script IS bash's stdin, and bash reads it one
+# command at a time - so fd 0 must never be replaced here (`exec < /dev/tty`
+# makes bash look for the rest of the script on the terminal, i.e. hang
+# silently). Instead give the terminal to the installer only, so its prompts
+# and sudo still work. Falls back to /dev/null when there is no terminal.
+if [ -t 0 ]; then
+    TTY_IN=""                       # already interactive; children inherit it
+elif { : < /dev/tty; } 2> /dev/null; then
+    TTY_IN=/dev/tty
+else
+    TTY_IN=/dev/null
 fi
+
+# Run a command with the terminal (not the curl pipe) on its stdin
+run_interactive() {
+    if [ -n "$TTY_IN" ]; then
+        "$@" < "$TTY_IN"
+    else
+        "$@"
+    fi
+}
 
 if [ -d "$DIR/.git" ]; then
     echo "SuperKeys found at $DIR - updating..."
-    "$DIR/update"
+    run_interactive "$DIR/update"
 elif [ -e "$DIR" ]; then
     echo "Error: $DIR exists but is not a SuperKeys checkout."
     echo "Move it aside, or set SUPERKEYS_DIR to a different location."
     exit 1
 else
     echo "Installing SuperKeys to $DIR..."
-    git clone "$REPO_URL" "$DIR"
-    "$DIR/install"
+    run_interactive git clone "$REPO_URL" "$DIR"
+    run_interactive "$DIR/install"
 fi
