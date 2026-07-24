@@ -25,8 +25,11 @@ print_chrome_copy_hint() {
 │        C-S-c = C-c                                                  │
 │   3. Run keyd-application-mapper -d  (add it to your autostart)     │
 │                                                                     │
-│ DevTools inspect stays available via Ctrl+Shift+I or F12. Works on  │
-│ X11 and some Wayland compositors - see the keyd README for support. │
+│ DevTools inspect stays available via Ctrl+Shift+I or F12.           │
+│ Works on: X11; COSMIC and wlroots Wayland (needs a recent keyd -    │
+│ build from git master if unsure); GNOME Wayland (needs keyd's       │
+│ bundled shell extension - see the keyd README); KDE.                │
+│ Verify window class names with: keyd-application-mapper -v          │
 └─────────────────────────────────────────────────────────────────────┘
 EOF
     fi
