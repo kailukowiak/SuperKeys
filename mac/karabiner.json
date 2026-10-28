@@ -55,6 +55,9 @@
                                             "right_control",
                                             "right_shift",
                                             "right_option"
+                                        ],
+                                        "optional": [
+                                            "caps_lock"
                                         ]
                                     }
                                 },
