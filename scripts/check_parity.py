@@ -35,11 +35,6 @@ KEYD_TO_KARABINER = {
     "[": "open_bracket", "]": "close_bracket", ";": "semicolon",
 }
 
-# Keys intentionally bound on only one platform (not checked for parity).
-# Each entry is (platform, keyd-equivalent-key).
-PLATFORM_SPECIFIC = {
-    ("mac", "t"),  # runs macOS Shortcuts app; no cross-platform equivalent
-}
 
 
 def parse_keyd(path):
@@ -173,8 +168,7 @@ def main():
             errors.append(f"windows/keymap.ahk binds hyper+{k}, absent from linux/default.conf")
     kb_to_keyd = {v: k for k, v in KEYD_TO_KARABINER.items()}
     for k, _, _ in sorted(karabiner):
-        keyd_key = kb_to_keyd.get(k, k)
-        if keyd_key not in keyd_base and ("mac", keyd_key) not in PLATFORM_SPECIFIC:
+        if kb_to_keyd.get(k, k) not in keyd_base:
             errors.append(f"mac/karabiner.json binds hyper+{k}, absent from linux/default.conf")
 
     if errors:

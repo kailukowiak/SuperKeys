@@ -1042,30 +1042,6 @@
                         ]
                     },
                     {
-                        "description": "Hyper Display Toggle",
-                        "manipulators": [
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "t",
-                                    "modifiers": {
-                                        "mandatory": [
-                                            "right_command",
-                                            "right_control",
-                                            "right_shift",
-                                            "right_option"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "shell_command": "shortcuts run \"Mirror Extend\""
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
                         "description": "Hyper Language/Input Switcher",
                         "manipulators": [
                             {
