@@ -85,7 +85,7 @@ p:: Send "{Media_Play_Pause}"
 [:: Send "{Volume_Down}"
 ]:: Send "{Volume_Up}"
 
-; --- App Shortcuts (Ctrl+Number, Ctrl+G/R/T) ---
+; --- App Shortcuts (Ctrl+Number) ---
 1:: Send "^1"
 2:: Send "^2"
 3:: Send "^3"
@@ -96,9 +96,6 @@ p:: Send "{Media_Play_Pause}"
 8:: Send "^8"
 9:: Send "^9"
 0:: Send "^0"
-g:: Send "^g"
-r:: Send "^r"
-t:: Send "^t"
 
 ; --- Language/Input Switcher ---
 Space:: Send "^{Space}"
