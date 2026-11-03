@@ -1,0 +1,31 @@
+{
+    "rules": [
+        {
+            "description": "Hyper+T runs a Shortcuts.app shortcut",
+            "manipulators": [
+                {
+                    "type": "basic",
+                    "from": {
+                        "key_code": "t",
+                        "modifiers": {
+                            "mandatory": [
+                                "right_command",
+                                "right_control",
+                                "right_shift",
+                                "right_option"
+                            ]
+                        }
+                    },
+                    "to": [
+                        {
+                            "shell_command": "shortcuts run \"My Shortcut\""
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "disable": [],
+    "parameters": {},
+    "profile": {}
+}

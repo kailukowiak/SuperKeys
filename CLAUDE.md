@@ -26,7 +26,8 @@ SuperKeys/
 │   └── uninstall.sh     # Removes symlink, restores backup, restarts keyd
 ├── mac/
 │   ├── karabiner.json   # Karabiner-Elements rules
-│   ├── install.sh       # macOS installer (merges SuperKeys profile)
+│   ├── local.json.example # Format for ~/.config/superkeys/local.json (personal rules)
+│   ├── install.sh       # macOS installer (merges SuperKeys profile + local.json)
 │   └── uninstall.sh     # Removes only the SuperKeys profile
 └── windows/
     ├── keymap.ahk       # AutoHotkey v2 script

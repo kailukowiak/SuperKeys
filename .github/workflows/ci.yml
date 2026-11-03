@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Validate karabiner.json
-        run: jq empty mac/karabiner.json
+        run: jq empty mac/karabiner.json mac/local.json.example
 
       - name: Cross-platform parity check
         run: python3 scripts/check_parity.py

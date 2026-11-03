@@ -200,7 +200,6 @@ Tap Caps Lock = Escape    │    Hold Caps Lock = Hyper Modifier
 | `Caps+Space` | Language/input switcher |
 | `Caps+Alt+Space` | Emoji/alternate input switcher |
 | `Caps+1-0` | App shortcuts (configurable) |
-| `Caps+G/R/T` | App shortcuts (configurable) |
 
 ### Deliberately not bound
 Find, undo/redo, select-all, close-tab, and similar are app-interpreted
@@ -223,6 +222,35 @@ on Windows. Commit and push, then run the update script on your other machines.
 Run `python3 scripts/check_parity.py` after editing to verify all three
 platforms still define the same keys (CI runs this too).
 
+### Personal additions on macOS
+
+Bindings that only make sense on your machine - running a Shortcut, opening a
+particular app - don't belong in the shared config. Put them in
+`~/.config/superkeys/local.json` instead (`$XDG_CONFIG_HOME` is honoured, and
+`SUPERKEYS_LOCAL` points at any other path). It lives outside the clone, so
+`./update` never touches it, and the installer layers it onto the SuperKeys
+profile on every run. Keeping it in a dotfiles repo and symlinking it into
+place works - the installer reads through the link.
+
+```bash
+mkdir -p ~/.config/superkeys
+cp mac/local.json.example ~/.config/superkeys/local.json   # edit, then ./update
+```
+
+Every key is optional:
+
+| Key | What it does |
+|-----|--------------|
+| `rules` | Karabiner complex-modification rules, placed *before* the repo's rules - Karabiner uses the first match, so a local rule on the same key wins |
+| `disable` | Descriptions of repo rules to leave out, e.g. `"Hyper Media Controls"` |
+| `parameters` | Merged into `complex_modifications.parameters`, e.g. `basic.to_if_alone_timeout_milliseconds` |
+| `profile` | Other profile keys such as `simple_modifications` or `devices`, set as-is |
+
+The installer stops without touching `karabiner.json` if `local.json` is
+invalid JSON or has a key it doesn't recognise. Use the hyper modifiers from
+the example (`right_command`, `right_control`, `right_shift`, `right_option`)
+for Hyper bindings.
+
 ## Requirements
 
 **Linux:**
@@ -241,19 +269,19 @@ platforms still define the same keys (CI runs this too).
 - Clipboard emits `Ctrl+Shift+C/V/X` for terminal compatibility (caveat: Chromium-based browsers - Chrome, Chromium, Brave, Edge, Opera - hardwire `Ctrl+Shift+C` to DevTools; Vivaldi alone can rebind it natively. Either use native `Ctrl+C` there, or set up [keyd's per-app mapper](https://github.com/rvaiya/keyd#application-specific-remapping) - the installer and updater print a copy-pasteable recipe covering the browsers they detect. DevTools inspect stays available via `Ctrl+Shift+I`/`F12`)
 - The per-app recipe binds `hyper.c = C-c`, **not** `C-S-c = C-c`. keyd never re-reads its own output, so a binding without the layer prefix only matches a *physical* `Ctrl+Shift+C` press - never `Caps+C` - and does nothing. The `usermod -aG keyd` step in the recipe also only takes effect at your next login; before that the mapper starts, connects to nothing and silently applies no bindings
 - **COSMIC users:** the per-app mapper does not work at all as of keyd v2.5.0. It binds `zcosmic_toplevel_info_v1` at the version COSMIC advertises (3), where the `toplevel` event it depends on is no longer sent, so it detects no windows (binding version 1 restores the event stream). It can additionally crash while parsing window titles. Both are upstream keyd bugs - until they are fixed, use native `Ctrl+C/V/X` in Chromium-based browsers on COSMIC
-- App shortcuts emit `Alt+1-0` and `Alt+G/R/T` - bind these in your window manager to launch apps
+- App shortcuts emit `Alt+1-0` - bind these in your window manager to launch apps
 - Window switching uses `Alt+Tab`
 - Quit application uses `Alt+F4`
 
 ### Mac (Karabiner)
 - Clipboard emits native `Cmd+C/V/X` (works everywhere including terminals)
-- App shortcuts emit `Ctrl+1-0` and `Ctrl+G/R/T` - works with tools like Raycast/Alfred
+- App shortcuts emit `Ctrl+1-0` - works with tools like Raycast/Alfred
 - Window switching uses native `Cmd+Tab`
 - Quit application uses `Cmd+Q`
 
 ### Windows (AutoHotkey)
 - Clipboard emits `Ctrl+C/V/X` (in most terminals `Ctrl+C` still copies when text is selected)
-- App shortcuts emit `Ctrl+1-0` and `Ctrl+G/R/T` - bind these in your preferred app launcher
+- App shortcuts emit `Ctrl+1-0` - bind these in your preferred app launcher
 - Window switching uses `Alt+Tab`
 - Quit application uses `Alt+F4`
 - Installer offers to set up autostart and launch immediately

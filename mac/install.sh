@@ -30,6 +30,9 @@ fi
 # Paths
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_CONFIG="$SCRIPT_DIR/karabiner.json"
+# Personal additions live outside the clone so a dotfiles repo can own them
+# (symlinked or copied) and a re-clone or pull never touches them
+LOCAL_CONFIG="${SUPERKEYS_LOCAL:-${XDG_CONFIG_HOME:-$HOME/.config}/superkeys/local.json}"
 TARGET_DIR="$HOME/.config/karabiner"
 TARGET_PATH="$TARGET_DIR/karabiner.json"
 
@@ -47,7 +50,7 @@ if [ -f "$TARGET_PATH" ]; then
 fi
 
 # Use Python to merge configs (available on all modern Macs)
-export REPO_CONFIG TARGET_PATH
+export REPO_CONFIG LOCAL_CONFIG TARGET_PATH
 python3 << 'PYTHON_SCRIPT'
 import json
 import sys
@@ -55,6 +58,7 @@ import os
 from pathlib import Path
 
 repo_config_path = os.environ['REPO_CONFIG']
+local_config_path = os.environ['LOCAL_CONFIG']
 target_path = os.environ['TARGET_PATH']
 
 # Read the SuperKeys config from repo
@@ -75,6 +79,58 @@ for profile in repo_config.get('profiles', []):
 if not superkeys_profile:
     print("Error: Could not find SuperKeys profile in repo config")
     sys.exit(1)
+
+# Layer the user's mac/local.json on top of the repo profile. Done before the
+# target is read so a broken local.json aborts without writing anything.
+LOCAL_KEYS = {'rules', 'disable', 'parameters', 'profile'}
+if os.path.exists(local_config_path):
+    try:
+        with open(local_config_path) as f:
+            local = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"Error: {local_config_path} is invalid JSON: {e}")
+        sys.exit(1)
+    if not isinstance(local, dict):
+        print(f"Error: {local_config_path} must be a JSON object")
+        sys.exit(1)
+    unknown = set(local) - LOCAL_KEYS
+    if unknown:
+        print(f"Error: unknown keys in local.json: {', '.join(sorted(unknown))}")
+        print(f"Allowed keys: {', '.join(sorted(LOCAL_KEYS))}")
+        sys.exit(1)
+    for key, kind, name in (('rules', list, 'array'), ('disable', list, 'array'),
+                            ('parameters', dict, 'object'), ('profile', dict, 'object')):
+        if not isinstance(local.get(key, kind()), kind):
+            print(f"Error: local.json '{key}' must be a JSON {name}")
+            sys.exit(1)
+
+    cm = superkeys_profile.setdefault('complex_modifications', {})
+    repo_rules = cm.get('rules', [])
+
+    # "disable": drop repo rules by their description
+    disabled = set(local.get('disable', []))
+    known = {r.get('description') for r in repo_rules}
+    for name in sorted(disabled - known):
+        print(f"Warning: local.json disables unknown rule {name!r}")
+    repo_rules = [r for r in repo_rules if r.get('description') not in disabled]
+
+    # "rules": go first - Karabiner uses the first manipulator that matches,
+    # so a local rule overrides a repo binding on the same key
+    local_rules = local.get('rules', [])
+    cm['rules'] = local_rules + repo_rules
+
+    # "parameters": e.g. basic.to_if_alone_timeout_milliseconds
+    cm.setdefault('parameters', {}).update(local.get('parameters', {}))
+
+    # "profile": other profile-level keys (simple_modifications, devices, ...)
+    for key, value in local.get('profile', {}).items():
+        if key in ('name', 'selected', 'complex_modifications'):
+            print(f"Error: local.json 'profile' may not set {key!r}")
+            sys.exit(1)
+        superkeys_profile[key] = value
+
+    print(f"✓ Applied local.json: {len(local_rules)} rule(s) added, "
+          f"{len(disabled & known)} disabled")
 
 # Read existing user config or create new one
 if os.path.exists(target_path):
